@@ -100,5 +100,5 @@ python3 -m filmoteka
 
 ## Презентация и доклад
 
-- Текст доклада на 8–9 минут и ответы на вероятные вопросы: [`presentation/speech.md`](presentation/speech.md).
+- Текст доклада на 7–8 минут и ответы на вероятные вопросы: [`presentation/speech.md`](presentation/speech.md).
 - Слайды (13 штук, с заметками докладчика) — в папке `presentation/`.
