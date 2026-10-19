@@ -1,6 +1,13 @@
 """Онлайн-кинотеатр: общий каталог произведений и зарегистрированные зрители."""
 
-from filmoteka.calculations import average_rating_by_genre, most_viewed, top_by_rating, total_views
+from filmoteka.calculations import (
+    average_rating_by_genre,
+    find_first,
+    most_viewed,
+    same_text,
+    top_by_rating,
+    total_views,
+)
 from filmoteka.exceptions import EmptyPlaylistException, ViewerException
 from filmoteka.playlist import Playlist
 from filmoteka.viewer import Viewer
@@ -19,16 +26,10 @@ class Catalog:
         return viewer
 
     def find_viewer(self, name):
-        for viewer in self.viewers:
-            if viewer.name.lower() == name.lower():
-                return viewer
-        return None
+        return find_first(self.viewers, lambda viewer: same_text(viewer.name, name))
 
     def find_film(self, title):
-        for film in self.films:
-            if film.title.lower() == title.lower():
-                return film
-        return None
+        return find_first(self.films, lambda film: same_text(film.title, title))
 
     def statistics(self, top=3):
         """Средний рейтинг по жанрам, топ по рейтингу и просмотры."""

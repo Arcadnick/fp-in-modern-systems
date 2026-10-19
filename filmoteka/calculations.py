@@ -23,6 +23,11 @@ def is_positive(value):
     return value > 0
 
 
+def one_of(options):
+    """Построить проверку «значение входит в options»."""
+    return lambda value: value in options
+
+
 def can_raise_rating(rating):
     return rating < MAX_RATING
 
@@ -64,7 +69,38 @@ def genre_matches(film, query):
     return query.lower() in film.genre.lower()
 
 
+# --- Обобщённые операции над списками ---
+
+def find_first(items, predicate):
+    """Первый элемент, для которого predicate истинен, или None."""
+    for item in items:
+        if predicate(item):
+            return item
+    return None
+
+
+def sorted_by(items, key, reverse=False):
+    return sorted(items, key=key, reverse=reverse)
+
+
+def group_by(items, keys_of):
+    """{ключ: [элементы]}; keys_of(item) возвращает все ключи элемента."""
+    groups = {}
+    for item in items:
+        for key in keys_of(item):
+            groups.setdefault(key, []).append(item)
+    return groups
+
+
+def same_text(first, second):
+    return first.lower() == second.lower()
+
+
 # --- Списки произведений ---
+
+def by_rating(item):
+    return item.rating
+
 
 def contains_same(items, item):
     """Есть ли в списке именно этот объект (сравнение по ссылке, а не по ==)."""
@@ -76,11 +112,11 @@ def sorted_by_name(items):
 
 
 def sorted_by_rating(items):
-    return sorted(items, key=lambda item: item.rating)
+    return sorted_by(items, by_rating)
 
 
 def top_by_rating(items, count):
-    return sorted(items, key=lambda item: item.rating, reverse=True)[:count]
+    return sorted_by(items, by_rating, reverse=True)[:count]
 
 
 def unique_by_line(items):
@@ -113,11 +149,8 @@ def recommendations(films, favorite_genres, watched, count):
 
 def average_rating_by_genre(films):
     """{жанр: средний рейтинг}, жанры по алфавиту."""
-    ratings = {}
-    for film in films:
-        for genre in split_genres(film.genre):
-            ratings.setdefault(genre, []).append(film.rating)
-    return {genre: average(ratings[genre]) for genre in sorted(ratings)}
+    groups = group_by(films, lambda film: split_genres(film.genre))
+    return {genre: average([film.rating for film in groups[genre]]) for genre in sorted(groups)}
 
 
 def total_views(films):
@@ -128,10 +161,15 @@ def most_viewed(films):
     """Самое просматриваемое произведение или None, если просмотров не было."""
     if total_views(films) == 0:
         return None
-    return max(films, key=lambda film: film.views)
+    return sorted_by(films, lambda film: film.views, reverse=True)[0]
 
 
 # --- Файлы ---
+
+def playlist_to_lines(items):
+    """Произведения -> строки файла: количество, затем по произведению в строке."""
+    return [str(len(items))] + [str(item) for item in items]
+
 
 def with_default_extension(filename):
     return filename if "." in filename else filename + ".txt"

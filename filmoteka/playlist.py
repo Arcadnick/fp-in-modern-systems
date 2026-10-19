@@ -1,8 +1,7 @@
 """Порт Playlist.cs: список произведений."""
 
 from filmoteka.calculations import contains_same, sorted_by_name, sorted_by_rating, unique_by_line
-from filmoteka.cinematography import Cartoon, Film, Serial
-from filmoteka.exceptions import EmptyPlaylistException, InvalidPropertyException, ReadingFromFileException
+from filmoteka.exceptions import EmptyPlaylistException
 
 
 class Playlist:
@@ -39,17 +38,20 @@ class Playlist:
         """Добавить произведение в начало плейлиста."""
         self.cinema.insert(0, item)
 
-    def sort_by_name(self):
-        if len(self.cinema) > 0:
-            self.cinema = sorted_by_name(self.cinema)
-        else:
+    def check_not_empty(self):
+        if len(self.cinema) == 0:
             raise EmptyPlaylistException()
 
+    def sort_with(self, sorter):
+        """Отсортировать плейлист функцией sorter(список) -> отсортированный список."""
+        self.check_not_empty()
+        self.cinema = sorter(self.cinema)
+
+    def sort_by_name(self):
+        self.sort_with(sorted_by_name)
+
     def sort_by_rating(self):
-        if len(self.cinema) > 0:
-            self.cinema = sorted_by_rating(self.cinema)
-        else:
-            raise EmptyPlaylistException()
+        self.sort_with(sorted_by_rating)
 
     def remove(self, item):
         for i in range(len(self.cinema)):
@@ -67,14 +69,12 @@ class Playlist:
         return self.cinema
 
     def get_first(self):
-        if len(self.cinema) > 0:
-            return self.cinema[0]
-        raise EmptyPlaylistException()
+        self.check_not_empty()
+        return self.cinema[0]
 
     def get_last(self):
-        if len(self.cinema) > 0:
-            return self.cinema[-1]
-        raise EmptyPlaylistException()
+        self.check_not_empty()
+        return self.cinema[-1]
 
     def remove_duplicates(self):
         """Удалить произведения, у которых совпадают все поля. Вернуть, сколько удалено."""
@@ -83,37 +83,5 @@ class Playlist:
         self.cinema = unique
         return removed
 
-    def load_from_file(self, filename):
-        """Дописать в плейлист произведения из файла.
-
-        Формат: в первой строке количество записей, дальше по записи в строке,
-        поля через «|», первое поле — тип (Film, Cartoon, Serial).
-        """
-        with open(filename, encoding="utf-8") as file:
-            try:
-                n = int(file.readline())
-                for _ in range(n):
-                    parts = file.readline().strip().split("|")
-                    if parts[0] == "Film":
-                        self.cinema.append(Film(parts[1], parts[2], parts[3], int(parts[4]), int(parts[5]),
-                                                int(parts[6]), parts[7]))
-                    if parts[0] == "Cartoon":
-                        self.cinema.append(Cartoon(parts[1], parts[2], parts[3], int(parts[4]), int(parts[5]),
-                                                   parts[6], parts[7]))
-                    if parts[0] == "Serial":
-                        self.cinema.append(Serial(parts[1], parts[2], parts[3], int(parts[4]), int(parts[5]),
-                                                  parts[6], parts[7], int(parts[8]), int(parts[9])))
-            except (ValueError, IndexError, InvalidPropertyException) as e:
-                raise ReadingFromFileException(f"В файле {filename} некорректные данные: {e}")
-
-    def save_to_file(self, filename):
-        with open(filename, "w", encoding="utf-8") as file:
-            file.write(f"{len(self.cinema)}\n")
-            for item in self.cinema:
-                file.write(f"{item}\n")
-
     def to_lines(self):
-        result = []
-        for item in self.cinema:
-            result.append(str(item))
-        return result
+        return [str(item) for item in self.cinema]

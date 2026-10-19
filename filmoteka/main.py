@@ -11,6 +11,7 @@ from filmoteka.calculations import better_of, genre_matches, item_at, parse_genr
 from filmoteka.catalog import Catalog
 from filmoteka.cinematography import Cartoon, Film, Serial
 from filmoteka.colors import BLACK_ON_GREEN, BLUE, CYAN, GREEN, RED, RESET
+from filmoteka.constructors import make_test_catalog
 from filmoteka.exceptions import (
     FilmotekaError,
     IdenticalMoviesException,
@@ -19,6 +20,7 @@ from filmoteka.exceptions import (
     RatingException,
 )
 from filmoteka.playlist import Playlist
+from filmoteka.storage import load_playlist, save_playlist
 
 
 def success(message):
@@ -83,9 +85,8 @@ def get_data(catalog):
     if filename == "":
         error("Имя файла не введено")
         return catalog
-    playlist = Playlist()
     try:
-        playlist.load_from_file(filename)
+        playlist = load_playlist(filename)
     except FileNotFoundError:
         error(f"Файл {filename} не найден. Введите корректное имя файла или путь.")
         return catalog
@@ -103,7 +104,7 @@ def get_file(catalog):
         filename = with_default_extension(filename)
         print("Имя было указано без расширения, поэтому файлу присвоено расширение .txt")
     try:
-        catalog.films.save_to_file(filename)
+        save_playlist(catalog.films, filename)
         success(f"Данные сохранены в {filename}")
     except OSError:
         error("Ошибка при выводе данных в файл.")
@@ -170,18 +171,20 @@ def compare(catalog):
     return catalog
 
 
-def sort_by_name(catalog):
+def sort_films(catalog, sort):
+    """Общая часть пунктов 7–8: отсортировать каталог функцией sort и показать."""
     check_data(catalog)
-    catalog.films.sort_by_name()
+    sort(catalog.films)
     print_playlist(catalog.films)
     return catalog
+
+
+def sort_by_name(catalog):
+    return sort_films(catalog, Playlist.sort_by_name)
 
 
 def sort_by_rating(catalog):
-    check_data(catalog)
-    catalog.films.sort_by_rating()
-    print_playlist(catalog.films)
-    return catalog
+    return sort_films(catalog, Playlist.sort_by_rating)
 
 
 def filter_films(catalog):
@@ -240,65 +243,62 @@ def choose_viewer(catalog):
     return viewer
 
 
-def watch_film(catalog):
-    check_data(catalog)
-    viewer = choose_viewer(catalog)
-    if viewer is None:
-        return catalog
-    film = choose_film(catalog.films, "Введите номер фильма для просмотра")
-    if film is not None:
-        views = viewer.watch(film)
-        success(f"{viewer.name} посмотрел(а) «{film.title}». Всего просмотров: {views}")
-    return catalog
-
-
-def rate_film(catalog):
-    check_data(catalog)
-    viewer = choose_viewer(catalog)
-    if viewer is None:
-        return catalog
-    film = choose_film(catalog.films, "Введите номер фильма для оценки")
-    if film is None:
-        return catalog
-    score = int(input("Ваша оценка (1..10): "))
-    rating = viewer.rate(film, score)
-    success(f"Оценка принята. Новый рейтинг «{film.title}»: {rating}")
-    return catalog
-
-
-def add_to_viewer_playlist(catalog):
-    check_data(catalog)
-    viewer = choose_viewer(catalog)
-    if viewer is None:
-        return catalog
-    film = choose_film(catalog.films, "Введите номер фильма для плейлиста")
-    if film is not None:
-        viewer.add_to_playlist(film)
-        print(f"«{film.title}» добавлен(а) в плейлист {viewer.name}")
-    return catalog
-
-
-def viewer_profile(catalog):
+def with_viewer(catalog, action):
+    """Общая часть пунктов 12–16: выбрать зрителя и выполнить action(viewer)."""
     check_data(catalog)
     viewer = choose_viewer(catalog)
     if viewer is not None:
+        action(viewer)
+    return catalog
+
+
+def with_viewer_and_film(catalog, prompt, action):
+    """Общая часть пунктов 12–14: выбрать зрителя и фильм и выполнить action(viewer, film)."""
+    def choose_and_act(viewer):
+        film = choose_film(catalog.films, prompt)
+        if film is not None:
+            action(viewer, film)
+    return with_viewer(catalog, choose_and_act)
+
+
+def watch_film(catalog):
+    def watch(viewer, film):
+        views = viewer.watch(film)
+        success(f"{viewer.name} посмотрел(а) «{film.title}». Всего просмотров: {views}")
+    return with_viewer_and_film(catalog, "Введите номер фильма для просмотра", watch)
+
+
+def rate_film(catalog):
+    def rate(viewer, film):
+        score = int(input("Ваша оценка (1..10): "))
+        rating = viewer.rate(film, score)
+        success(f"Оценка принята. Новый рейтинг «{film.title}»: {rating}")
+    return with_viewer_and_film(catalog, "Введите номер фильма для оценки", rate)
+
+
+def add_to_viewer_playlist(catalog):
+    def add(viewer, film):
+        viewer.add_to_playlist(film)
+        print(f"«{film.title}» добавлен(а) в плейлист {viewer.name}")
+    return with_viewer_and_film(catalog, "Введите номер фильма для плейлиста", add)
+
+
+def viewer_profile(catalog):
+    def show(viewer):
         header(f"\nЗритель: {viewer.name}")
         print_lines(viewer.profile_lines())
-    return catalog
+    return with_viewer(catalog, show)
 
 
 def recommend(catalog):
-    check_data(catalog)
-    viewer = choose_viewer(catalog)
-    if viewer is None:
-        return catalog
-    header(f"Рекомендации для {viewer.name}:")
-    films = viewer.recommend(catalog.films)
-    if len(films) == 0:
-        print("  Подходящих произведений не нашлось")
-    for film in films:
-        print(f"  {film.title} ({film.genre}), рейтинг {film.rating}")
-    return catalog
+    def show(viewer):
+        header(f"Рекомендации для {viewer.name}:")
+        films = viewer.recommend(catalog.films)
+        if len(films) == 0:
+            print("  Подходящих произведений не нашлось")
+        for film in films:
+            print(f"  {film.title} ({film.genre}), рейтинг {film.rating}")
+    return with_viewer(catalog, show)
 
 
 def statistics(catalog):
@@ -321,31 +321,7 @@ def statistics(catalog):
 
 
 def test_database(catalog):
-    film1 = Film("Inception", "Nolan C.", "Fantasy", 2010, 10, 160000000, "Yes")
-    film2 = Film("End of Watch", "Ayer D.", "Action", 2012, 5, 20000000, "No")
-    film3 = Film("Barbie", "Gerwig G.", "Comedy", 2023, 7, 145000000, "No")
-    film4 = Film("The Grand Budapest Hotel", "Anderson W.", "Criminal", 2014, 10, 100000000, "Yes")
-    film5 = Serial("Smeshariki", "Chernov D.", "Comedy", 2008, 3, "Krosh, Ejik", "Serial", 180, 2)
-    film6 = Cartoon("Cars", "Ranft J.", "Family", 2006, 10, "Mq.Queen", "Full")
-    film7 = Serial("Gravity Falls", "Springer A.", "Detective", 2012, 10, "Dipper, Mabel", "Serial", 41, 2)
-    film8 = Cartoon("WALL-E", "Stanton A.", "Adventure", 2008, 10, "WALL-E", "Full")
-    film9 = Serial("Rick and Morty", "Roiland J.", "Comedy, Science fiction, Adventure", 2013, 8,
-                   "Rick, Morty", "Serial", 62, 7)
-
-    movies = Playlist()
-    movies.add_last(film1)
-    movies.add_last(film2)
-    movies.add_last(film3)
-    movies.add_last(film4)
-    movies.add_last(film5)
-    movies.add_last(film6)
-    movies.add_last(film7)
-    movies.add_last(film8)
-    movies.add_last(film9)
-
-    new_catalog = Catalog(movies)
-    new_catalog.register_viewer("Алексей", ["Comedy", "Adventure"])
-    new_catalog.register_viewer("Мария", ["Fantasy", "Detective", "Family"])
+    new_catalog = make_test_catalog()
     print(f"{BLACK_ON_GREEN}Данные успешно загружены{RESET}")
     return new_catalog
 

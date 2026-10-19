@@ -11,8 +11,19 @@ from filmoteka.calculations import (
     is_positive,
     is_valid_rating,
     is_valid_year,
+    one_of,
 )
 from filmoteka.exceptions import InvalidPropertyException, RatingException
+
+EFFECTS = ("Yes", "No")
+CARTOON_KINDS = ("Short", "Full", "Serial")
+
+
+def checked(value, is_valid, message):
+    """Вернуть value, если is_valid(value), иначе бросить InvalidPropertyException(message)."""
+    if not is_valid(value):
+        raise InvalidPropertyException(message)
+    return value
 
 
 class Cinematography(ABC):
@@ -36,9 +47,7 @@ class Cinematography(ABC):
 
     @release.setter
     def release(self, value):
-        if not is_valid_year(value):
-            raise InvalidPropertyException(f"Неверный год ({value}), допустимо {MIN_YEAR}..{MAX_YEAR}")
-        self._release = value
+        self._release = checked(value, is_valid_year, f"Неверный год ({value}), допустимо {MIN_YEAR}..{MAX_YEAR}")
 
     @property
     def rating(self):
@@ -46,9 +55,8 @@ class Cinematography(ABC):
 
     @rating.setter
     def rating(self, value):
-        if not is_valid_rating(value):
-            raise InvalidPropertyException(f"Неверный рейтинг ({value}), допустимо {MIN_RATING}..{MAX_RATING}")
-        self._rating = value
+        self._rating = checked(value, is_valid_rating,
+                               f"Неверный рейтинг ({value}), допустимо {MIN_RATING}..{MAX_RATING}")
 
     def __lt__(self, other):
         if self.title == other.title:
@@ -101,9 +109,7 @@ class Film(Cinematography):
 
     @budget.setter
     def budget(self, value):
-        if not is_positive(value):
-            raise InvalidPropertyException(f"Неверный бюджет ({value}), бюджет должен быть больше 0")
-        self._budget = value
+        self._budget = checked(value, is_positive, f"Неверный бюджет ({value}), бюджет должен быть больше 0")
 
     @property
     def effect(self):
@@ -111,9 +117,7 @@ class Film(Cinematography):
 
     @effect.setter
     def effect(self, value):
-        if value not in ("Yes", "No"):
-            raise InvalidPropertyException(f"Неверное значение ({value}), возможные — Yes/No")
-        self._effect = value
+        self._effect = checked(value, one_of(EFFECTS), f"Неверное значение ({value}), возможные — Yes/No")
 
     def details(self):
         return super().details() + [
@@ -141,9 +145,8 @@ class Cartoon(Cinematography):
 
     @kind.setter
     def kind(self, value):
-        if value not in ("Short", "Full", "Serial"):
-            raise InvalidPropertyException(f"Неверное значение ({value}), возможные варианты — Full, Short, Serial")
-        self._kind = value
+        self._kind = checked(value, one_of(CARTOON_KINDS),
+                             f"Неверное значение ({value}), возможные варианты — Full, Short, Serial")
 
     def details(self):
         return super().details() + [
@@ -171,9 +174,7 @@ class Serial(Cartoon):
 
     @series.setter
     def series(self, value):
-        if not is_positive(value):
-            raise InvalidPropertyException(f"Неверное количество серий ({value}), оно должно быть больше 0")
-        self._series = value
+        self._series = checked(value, is_positive, f"Неверное количество серий ({value}), оно должно быть больше 0")
 
     @property
     def seasons(self):
@@ -181,9 +182,8 @@ class Serial(Cartoon):
 
     @seasons.setter
     def seasons(self, value):
-        if not is_positive(value):
-            raise InvalidPropertyException(f"Неверное количество сезонов ({value}), оно должно быть больше 0")
-        self._seasons = value
+        self._seasons = checked(value, is_positive,
+                                f"Неверное количество сезонов ({value}), оно должно быть больше 0")
 
     def details(self):
         return super().details() + [
