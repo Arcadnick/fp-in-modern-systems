@@ -2,8 +2,16 @@
 
 from abc import ABC, abstractmethod
 
-from filmoteka.calculations import can_raise_rating, is_positive, is_valid_rating, is_valid_year
-from filmoteka.colors import BLUE, GREEN, RESET
+from filmoteka.calculations import (
+    MAX_RATING,
+    MAX_YEAR,
+    MIN_RATING,
+    MIN_YEAR,
+    can_raise_rating,
+    is_positive,
+    is_valid_rating,
+    is_valid_year,
+)
 from filmoteka.exceptions import InvalidPropertyException, RatingException
 
 
@@ -28,16 +36,9 @@ class Cinematography(ABC):
 
     @release.setter
     def release(self, value):
-        if is_valid_year(value):
-            self._release = value
-        else:
-            try:
-                self._release = 2026
-                raise InvalidPropertyException(
-                    f"Введён неверный год ({value}), диапазон ввода 1895..2026 (было присвоено 2026)"
-                )
-            except InvalidPropertyException as e:
-                print(e)
+        if not is_valid_year(value):
+            raise InvalidPropertyException(f"Неверный год ({value}), допустимо {MIN_YEAR}..{MAX_YEAR}")
+        self._release = value
 
     @property
     def rating(self):
@@ -45,16 +46,9 @@ class Cinematography(ABC):
 
     @rating.setter
     def rating(self, value):
-        if is_valid_rating(value):
-            self._rating = value
-        else:
-            try:
-                self._rating = 0
-                raise InvalidPropertyException(
-                    f"Введён неверный рейтинг ({value}), диапазон ввода 1..10 (было присвоено 0)"
-                )
-            except InvalidPropertyException as e:
-                print(e)
+        if not is_valid_rating(value):
+            raise InvalidPropertyException(f"Неверный рейтинг ({value}), допустимо {MIN_RATING}..{MAX_RATING}")
+        self._rating = value
 
     def __lt__(self, other):
         if self.title == other.title:
@@ -69,30 +63,30 @@ class Cinematography(ABC):
 
     __hash__ = object.__hash__
 
-    def print_data(self):
-        """Вывод информации о произведении по пунктам."""
-        print(f"{BLUE}\nИнформация о произведении:{RESET}")
-        print(f"Название: {self.title}")
-        print(f"Режиссёр: {self.director}")
-        print(f"Жанр: {self.genre}")
-        print(f"Год выхода: {self.release}")
-        print(f"Рейтинг: {self.rating}")
-        print(f"Просмотров: {self.views}")
+    def details(self):
+        """Информация о произведении построчно."""
+        return [
+            f"Название: {self.title}",
+            f"Режиссёр: {self.director}",
+            f"Жанр: {self.genre}",
+            f"Год выхода: {self.release}",
+            f"Рейтинг: {self.rating}",
+            f"Просмотров: {self.views}",
+        ]
 
     def __str__(self):
         return f"Cinematography|{self.title}|{self.director}|{self.genre}|{self.release}|{self.rating}"
 
     def raise_rating(self):
-        """Поднять рейтинг на 1."""
-        if can_raise_rating(self._rating):
-            self._rating += 1
-            print(f"{GREEN}Рейтинг «{self.title}» успешно поднят на одно значение и составляет {self._rating}{RESET}")
-        else:
-            raise RatingException(f"Рейтинг «{self.title}» невозможно поднять, он уже максимальный")
+        """Поднять рейтинг на 1 и вернуть новый рейтинг."""
+        if not can_raise_rating(self._rating):
+            raise RatingException(f"Рейтинг «{self.title}» уже максимальный, поднять его нельзя")
+        self._rating += 1
+        return self._rating
 
     @abstractmethod
     def describe(self):
-        """Сказать, что это за произведение (ToDo в оригинале)."""
+        """Что это за произведение (ToDo в оригинале)."""
 
 
 class Film(Cinematography):
@@ -107,16 +101,9 @@ class Film(Cinematography):
 
     @budget.setter
     def budget(self, value):
-        if is_positive(value):
-            self._budget = value
-        else:
-            try:
-                self._budget = 1
-                raise InvalidPropertyException(
-                    f"Введён неверный бюджет ({value}), бюджет не может быть <= 0 (было присвоено 1)"
-                )
-            except InvalidPropertyException as e:
-                print(e)
+        if not is_positive(value):
+            raise InvalidPropertyException(f"Неверный бюджет ({value}), бюджет должен быть больше 0")
+        self._budget = value
 
     @property
     def effect(self):
@@ -124,28 +111,22 @@ class Film(Cinematography):
 
     @effect.setter
     def effect(self, value):
-        if value == "Yes" or value == "No":
-            self._effect = value
-        else:
-            try:
-                self._effect = "--"
-                raise InvalidPropertyException(
-                    f"Введено неверное значение ({value}), возможные — Yes/No (было присвоено --)"
-                )
-            except InvalidPropertyException as e:
-                print(e)
+        if value not in ("Yes", "No"):
+            raise InvalidPropertyException(f"Неверное значение ({value}), возможные — Yes/No")
+        self._effect = value
 
-    def print_data(self):
-        super().print_data()
-        print(f"Бюджет: {self.budget}")
-        print(f"Живые спецэффекты: {self.effect}")
+    def details(self):
+        return super().details() + [
+            f"Бюджет: {self.budget}",
+            f"Живые спецэффекты: {self.effect}",
+        ]
 
     def __str__(self):
         return (f"Film|{self.title}|{self.director}|{self.genre}|{self.release}|{self.rating}"
                 f"|{self.budget}|{self.effect}")
 
     def describe(self):
-        print("Это фильм")
+        return "Это фильм"
 
 
 class Cartoon(Cinematography):
@@ -160,28 +141,22 @@ class Cartoon(Cinematography):
 
     @kind.setter
     def kind(self, value):
-        if value == "Short" or value == "Full" or value == "Serial":
-            self._kind = value
-        else:
-            try:
-                self._kind = "--"
-                raise InvalidPropertyException(
-                    f"Введено неверное значение ({value}), возможные варианты — Full, Short, Serial (было присвоено --)"
-                )
-            except InvalidPropertyException as e:
-                print(e)
+        if value not in ("Short", "Full", "Serial"):
+            raise InvalidPropertyException(f"Неверное значение ({value}), возможные варианты — Full, Short, Serial")
+        self._kind = value
 
-    def print_data(self):
-        super().print_data()
-        print(f"Персонажи: {self.character}")
-        print(f"Тип: {self.kind}")
+    def details(self):
+        return super().details() + [
+            f"Персонажи: {self.character}",
+            f"Тип: {self.kind}",
+        ]
 
     def __str__(self):
         return (f"Cartoon|{self.title}|{self.director}|{self.genre}|{self.release}|{self.rating}"
                 f"|{self.character}|{self.kind}")
 
     def describe(self):
-        print("Это мультфильм")
+        return "Это мультфильм"
 
 
 class Serial(Cartoon):
@@ -196,16 +171,9 @@ class Serial(Cartoon):
 
     @series.setter
     def series(self, value):
-        if is_positive(value):
-            self._series = value
-        else:
-            try:
-                self._series = 0
-                raise InvalidPropertyException(
-                    f"Введено неверное количество серий ({value}), оно не может быть <= 0 (было присвоено 0)"
-                )
-            except InvalidPropertyException as e:
-                print(e)
+        if not is_positive(value):
+            raise InvalidPropertyException(f"Неверное количество серий ({value}), оно должно быть больше 0")
+        self._series = value
 
     @property
     def seasons(self):
@@ -213,25 +181,19 @@ class Serial(Cartoon):
 
     @seasons.setter
     def seasons(self, value):
-        if is_positive(value):
-            self._seasons = value
-        else:
-            try:
-                self._seasons = 0
-                raise InvalidPropertyException(
-                    f"Введено неверное количество сезонов ({value}), оно не может быть <= 0 (было присвоено 0)"
-                )
-            except InvalidPropertyException as e:
-                print(e)
+        if not is_positive(value):
+            raise InvalidPropertyException(f"Неверное количество сезонов ({value}), оно должно быть больше 0")
+        self._seasons = value
 
-    def print_data(self):
-        super().print_data()
-        print(f"Серий: {self.series}")
-        print(f"Сезонов: {self.seasons}")
+    def details(self):
+        return super().details() + [
+            f"Серий: {self.series}",
+            f"Сезонов: {self.seasons}",
+        ]
 
     def __str__(self):
         return (f"Serial|{self.title}|{self.director}|{self.genre}|{self.release}|{self.rating}"
                 f"|{self.character}|{self.kind}|{self.series}|{self.seasons}")
 
     def describe(self):
-        print("Это мультсериал")
+        return "Это мультсериал"

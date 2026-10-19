@@ -2,8 +2,7 @@
 
 from filmoteka.calculations import contains_same, sorted_by_name, sorted_by_rating, unique_by_line
 from filmoteka.cinematography import Cartoon, Film, Serial
-from filmoteka.colors import BLACK_ON_GREEN, RESET
-from filmoteka.exceptions import EmptyPlaylistException, ReadingFromFileException
+from filmoteka.exceptions import EmptyPlaylistException, InvalidPropertyException, ReadingFromFileException
 
 
 class Playlist:
@@ -28,11 +27,9 @@ class Playlist:
                 new_playlist.add_last(item)
         return new_playlist
 
-    def print_all(self):
-        """Вывести весь плейлист с номерами."""
-        print("Список произведений:")
-        for i, item in enumerate(self.cinema, start=1):
-            print(f"{i}. {item}")
+    def numbered_lines(self):
+        """Плейлист построчно с номерами."""
+        return [f"{i}. {item}" for i, item in enumerate(self.cinema, start=1)]
 
     def add_last(self, item):
         """Добавить произведение в конец плейлиста."""
@@ -80,11 +77,11 @@ class Playlist:
         raise EmptyPlaylistException()
 
     def remove_duplicates(self):
-        """Удалить произведения, у которых совпадают все поля."""
+        """Удалить произведения, у которых совпадают все поля. Вернуть, сколько удалено."""
         unique = unique_by_line(self.cinema)
         removed = len(self.cinema) - len(unique)
         self.cinema = unique
-        print(f"Удалено дубликатов: {removed}")
+        return removed
 
     def load_from_file(self, filename):
         """Дописать в плейлист произведения из файла.
@@ -106,9 +103,8 @@ class Playlist:
                     if parts[0] == "Serial":
                         self.cinema.append(Serial(parts[1], parts[2], parts[3], int(parts[4]), int(parts[5]),
                                                   parts[6], parts[7], int(parts[8]), int(parts[9])))
-            except (ValueError, IndexError) as e:
-                raise ReadingFromFileException(str(e))
-        print(f"{BLACK_ON_GREEN}Данные успешно загружены{RESET}")
+            except (ValueError, IndexError, InvalidPropertyException) as e:
+                raise ReadingFromFileException(f"В файле {filename} некорректные данные: {e}")
 
     def save_to_file(self, filename):
         with open(filename, "w", encoding="utf-8") as file:

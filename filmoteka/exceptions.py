@@ -1,48 +1,46 @@
-"""Порт MainException.cs: исключения, которые сами печатают подсказку при создании."""
+"""Исключения предметной области.
 
-from filmoteka.colors import RED, RESET
-
-
-class RatingException(Exception):
-    def __init__(self, message):
-        super().__init__(message)
-        print(f"{RED}Минимальное значение рейтинга — 1, максимальное — 10.{RESET}")
+Сами ничего не печатают: текст ошибки показывает пользователю меню.
+"""
 
 
-class ReadingFromFileException(Exception):
-    def __init__(self, message):
-        super().__init__(message)
-        print(f"{RED}В файле записаны некорректные данные.")
-        print(f"Пожалуйста, проверьте содержимое файла.{RESET}")
+class FilmotekaError(Exception):
+    """Ошибка, текст которой меню показывает пользователю."""
 
 
-class NumberFilmException(Exception):
-    def __init__(self, message=""):
-        super().__init__(message)
-        print(f"{RED}Фильма с таким номером нет.")
-        print(f"Пожалуйста, введите номер из списка.{RESET}")
+class RatingException(FilmotekaError):
+    pass
 
 
-class NoDataUploadedException(Exception):
+class ReadingFromFileException(FilmotekaError):
+    pass
+
+
+class NumberFilmException(FilmotekaError):
     def __init__(self):
-        super().__init__("Данные не загружены")
-        print(f"{RED}Сначала загрузите данные (пункт 1 или 3 меню).{RESET}")
+        super().__init__("Фильма с таким номером нет. Введите номер из списка.")
 
 
-class IdenticalMoviesException(Exception):
+class NoDataUploadedException(FilmotekaError):
     def __init__(self):
-        super().__init__("Выбран один и тот же фильм")
-        print(f"{RED}Нет смысла сравнивать фильм с самим собой. Выберите два разных фильма.{RESET}")
+        super().__init__("Сначала загрузите данные (пункт 1 или 3 меню).")
 
 
-class InvalidPropertyException(Exception):
-    def __init__(self, message):
-        super().__init__(message)
-        print(f"{RED}Введено неверное значение свойства{RESET}")
+class IdenticalMoviesException(FilmotekaError):
+    def __init__(self):
+        super().__init__("Нет смысла сравнивать фильм с самим собой. Выберите два разных фильма.")
 
 
-class EmptyPlaylistException(Exception):
+class InvalidPropertyException(FilmotekaError):
+    pass
+
+
+class EmptyPlaylistException(FilmotekaError):
     """Аналог InvalidOperationException("The container is empty.") из C#."""
 
     def __init__(self):
         super().__init__("Плейлист пуст.")
+
+
+class ViewerException(FilmotekaError):
+    pass
