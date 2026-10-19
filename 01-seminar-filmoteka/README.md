@@ -100,5 +100,13 @@ python3 -m filmoteka
 
 ## Презентация и доклад
 
-- Текст доклада на 7–8 минут и ответы на вероятные вопросы: [`presentation/speech.md`](presentation/speech.md).
-- Слайды (13 штук, с заметками докладчика) — в папке `presentation/`.
+Всё лежит в папке [`presentation/`](presentation/):
+
+| Файл | Что это |
+|---|---|
+| [`slides.pdf`](presentation/slides.pdf) | Слайды в PDF — для сдачи и показа с любого компьютера |
+| [`slides.pptx`](presentation/slides.pptx) | PowerPoint со шрифтами IBM Plex Sans и JetBrains Mono (если их нет на компьютере, будут заменены) |
+| [`slides-basic-fonts.pptx`](presentation/slides-basic-fonts.pptx) | PowerPoint с базовыми шрифтами Arial и Courier New — одинаково выглядит везде |
+| [`speech.md`](presentation/speech.md) | Текст доклада на 7–8 минут по слайдам и ответы на вероятные вопросы |
+
+Заметки докладчика с тем же текстом есть и внутри PPTX.
