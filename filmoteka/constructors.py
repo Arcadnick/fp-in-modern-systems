@@ -61,7 +61,6 @@ def make_test_films():
 
 
 def make_test_catalog():
-    catalog = Catalog(Playlist(make_test_films()))
-    catalog.register_viewer("Алексей", ["Comedy", "Adventure"])
-    catalog.register_viewer("Мария", ["Fantasy", "Detective", "Family"])
-    return catalog
+    return (Catalog(Playlist(make_test_films()))
+            .with_viewer("Алексей", ["Comedy", "Adventure"])
+            .with_viewer("Мария", ["Fantasy", "Detective", "Family"]))

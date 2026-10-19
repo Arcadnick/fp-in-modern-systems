@@ -3,10 +3,22 @@
 Результат зависит только от аргументов, ничего не печатают и ничего не меняют.
 """
 
+import copy
+
 MIN_YEAR = 1895
 MAX_YEAR = 2026
 MIN_RATING = 1
 MAX_RATING = 10
+
+
+# --- Copy-on-write ---
+
+def copy_with(obj, **changes):
+    """Поверхностная копия obj с изменёнными полями. Сам obj не меняется."""
+    result = copy.copy(obj)
+    for name, value in changes.items():
+        setattr(result, name, value)
+    return result
 
 
 # --- Проверки значений свойств ---
@@ -92,6 +104,11 @@ def group_by(items, keys_of):
     return groups
 
 
+def replaced(items, old, new):
+    """Кортеж items, в котором объект old (по ссылке) заменён на new."""
+    return tuple(new if item is old else item for item in items)
+
+
 def same_text(first, second):
     return first.lower() == second.lower()
 
@@ -138,10 +155,10 @@ def item_at(items, number):
     return None
 
 
-def recommendations(films, favorite_genres, watched, count):
+def recommendations(films, favorite_genres, watched_titles, count):
     """Непросмотренные произведения любимых жанров, лучшие по рейтингу."""
     candidates = [film for film in films
-                  if not contains_same(watched, film) and has_favorite_genre(film, favorite_genres)]
+                  if film.title not in watched_titles and has_favorite_genre(film, favorite_genres)]
     return top_by_rating(candidates, count)
 
 

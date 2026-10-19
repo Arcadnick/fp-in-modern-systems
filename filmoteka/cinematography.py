@@ -8,7 +8,9 @@ from filmoteka.calculations import (
     MIN_RATING,
     MIN_YEAR,
     can_raise_rating,
+    copy_with,
     is_positive,
+    rating_from_votes,
     is_valid_rating,
     is_valid_year,
     one_of,
@@ -29,6 +31,7 @@ def checked(value, is_valid, message):
 class Cinematography(ABC):
     """Произведение кинематографа.
 
+    После создания не меняется: операции возвращают изменённую копию (copy-on-write).
     Сортировка (<) — по названию, при одинаковом названии — по году выхода.
     """
 
@@ -39,7 +42,7 @@ class Cinematography(ABC):
         self.release = release
         self.rating = rating  # 1..10
         self.views = 0
-        self.votes = [self.rating]  # оценка критиков + оценки зрителей
+        self.votes = (self.rating,)  # оценка критиков + оценки зрителей
 
     @property
     def release(self):
@@ -85,12 +88,20 @@ class Cinematography(ABC):
     def __str__(self):
         return f"Cinematography|{self.title}|{self.director}|{self.genre}|{self.release}|{self.rating}"
 
-    def raise_rating(self):
-        """Поднять рейтинг на 1 и вернуть новый рейтинг."""
-        if not can_raise_rating(self._rating):
+    def with_raised_rating(self):
+        """Копия с рейтингом на 1 больше."""
+        if not can_raise_rating(self.rating):
             raise RatingException(f"Рейтинг «{self.title}» уже максимальный, поднять его нельзя")
-        self._rating += 1
-        return self._rating
+        return copy_with(self, rating=self.rating + 1)
+
+    def with_view(self):
+        """Копия с ещё одним просмотром."""
+        return copy_with(self, views=self.views + 1)
+
+    def with_vote(self, score):
+        """Копия с новой оценкой зрителя и пересчитанным рейтингом."""
+        votes = self.votes + (score,)
+        return copy_with(self, votes=votes, rating=rating_from_votes(votes))
 
     @abstractmethod
     def describe(self):

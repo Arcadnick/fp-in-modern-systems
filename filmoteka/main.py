@@ -1,7 +1,9 @@
 """Консольное меню фильмотеки: порт Program.cs.
 
 Единственное место с вводом-выводом. Каждое действие меню получает текущий
-каталог аргументом и возвращает каталог, с которым работать дальше.
+каталог аргументом и возвращает каталог, с которым работать дальше: тот же,
+если ничего не изменилось, или новый. Старые каталоги не меняются (copy-on-write),
+поэтому их можно хранить для отмены действий.
 """
 
 import traceback
@@ -19,7 +21,6 @@ from filmoteka.exceptions import (
     NumberFilmException,
     RatingException,
 )
-from filmoteka.playlist import Playlist
 from filmoteka.storage import load_playlist, save_playlist
 
 
@@ -66,6 +67,7 @@ def print_menu():
     print("15. Профиль зрителя")
     print("16. Рекомендации зрителю")
     print("17. Статистика каталога")
+    print(f"{UNDO}. Отменить последнее изменение")
     print(" 0. Выход")
     return int(input("> "))
 
@@ -143,9 +145,9 @@ def raise_up(catalog):
         if film is None:
             return catalog
         try:
-            rating = film.raise_rating()
-            success(f"Рейтинг «{film.title}» успешно поднят на одно значение и составляет {rating}")
-            return catalog
+            new_catalog, raised = catalog.raise_rating(film)
+            success(f"Рейтинг «{film.title}» успешно поднят на одно значение и составляет {raised.rating}")
+            return new_catalog
         except RatingException as e:
             error(e)
             header("Выберите другой фильм или введите 0 для выхода")
@@ -174,17 +176,17 @@ def compare(catalog):
 def sort_films(catalog, sort):
     """Общая часть пунктов 7–8: отсортировать каталог функцией sort и показать."""
     check_data(catalog)
-    sort(catalog.films)
-    print_playlist(catalog.films)
-    return catalog
+    new_catalog = sort(catalog)
+    print_playlist(new_catalog.films)
+    return new_catalog
 
 
 def sort_by_name(catalog):
-    return sort_films(catalog, Playlist.sort_by_name)
+    return sort_films(catalog, Catalog.sorted_by_name)
 
 
 def sort_by_rating(catalog):
-    return sort_films(catalog, Playlist.sort_by_rating)
+    return sort_films(catalog, Catalog.sorted_by_rating)
 
 
 def filter_films(catalog):
@@ -214,9 +216,9 @@ def filter_films(catalog):
 
 def remove_duplicates(catalog):
     check_data(catalog)
-    removed = catalog.films.remove_duplicates()
-    print(f"Удалено дубликатов: {removed}")
-    return catalog
+    new_catalog = catalog.without_duplicates()
+    print(f"Удалено дубликатов: {len(catalog.films) - len(new_catalog.films)}")
+    return new_catalog
 
 
 def register_viewer(catalog):
@@ -226,9 +228,9 @@ def register_viewer(catalog):
         error("Имя не введено")
         return catalog
     genres = input("Любимые жанры через запятую (например, Comedy, Adventure): ")
-    catalog.register_viewer(name, parse_genres(genres))
+    new_catalog = catalog.with_viewer(name, parse_genres(genres))
     success(f"Зритель {name} зарегистрирован")
-    return catalog
+    return new_catalog
 
 
 def choose_viewer(catalog):
@@ -244,42 +246,46 @@ def choose_viewer(catalog):
 
 
 def with_viewer(catalog, action):
-    """Общая часть пунктов 12–16: выбрать зрителя и выполнить action(viewer)."""
+    """Общая часть пунктов 12–16: выбрать зрителя и вернуть action(viewer) -> каталог."""
     check_data(catalog)
     viewer = choose_viewer(catalog)
-    if viewer is not None:
-        action(viewer)
-    return catalog
+    if viewer is None:
+        return catalog
+    return action(viewer)
 
 
 def with_viewer_and_film(catalog, prompt, action):
-    """Общая часть пунктов 12–14: выбрать зрителя и фильм и выполнить action(viewer, film)."""
+    """Общая часть пунктов 12–14: выбрать зрителя и фильм и вернуть action(viewer, film) -> каталог."""
     def choose_and_act(viewer):
         film = choose_film(catalog.films, prompt)
-        if film is not None:
-            action(viewer, film)
+        if film is None:
+            return catalog
+        return action(viewer, film)
     return with_viewer(catalog, choose_and_act)
 
 
 def watch_film(catalog):
     def watch(viewer, film):
-        views = viewer.watch(film)
-        success(f"{viewer.name} посмотрел(а) «{film.title}». Всего просмотров: {views}")
+        new_catalog, watched = catalog.watch(viewer, film)
+        success(f"{viewer.name} посмотрел(а) «{film.title}». Всего просмотров: {watched.views}")
+        return new_catalog
     return with_viewer_and_film(catalog, "Введите номер фильма для просмотра", watch)
 
 
 def rate_film(catalog):
     def rate(viewer, film):
         score = int(input("Ваша оценка (1..10): "))
-        rating = viewer.rate(film, score)
-        success(f"Оценка принята. Новый рейтинг «{film.title}»: {rating}")
+        new_catalog, voted = catalog.rate(viewer, film, score)
+        success(f"Оценка принята. Новый рейтинг «{film.title}»: {voted.rating}")
+        return new_catalog
     return with_viewer_and_film(catalog, "Введите номер фильма для оценки", rate)
 
 
 def add_to_viewer_playlist(catalog):
     def add(viewer, film):
-        viewer.add_to_playlist(film)
+        new_catalog = catalog.add_to_playlist(viewer, film)
         print(f"«{film.title}» добавлен(а) в плейлист {viewer.name}")
+        return new_catalog
     return with_viewer_and_film(catalog, "Введите номер фильма для плейлиста", add)
 
 
@@ -287,6 +293,7 @@ def viewer_profile(catalog):
     def show(viewer):
         header(f"\nЗритель: {viewer.name}")
         print_lines(viewer.profile_lines())
+        return catalog
     return with_viewer(catalog, show)
 
 
@@ -298,6 +305,7 @@ def recommend(catalog):
             print("  Подходящих произведений не нашлось")
         for film in films:
             print(f"  {film.title} ({film.genre}), рейтинг {film.rating}")
+        return catalog
     return with_viewer(catalog, show)
 
 
@@ -334,6 +342,8 @@ def write_error_log(err):
         log.write("-" * 150 + "\n")
 
 
+UNDO = 18
+
 ACTIONS = {
     1: get_data,
     2: get_file,
@@ -358,13 +368,23 @@ ACTIONS = {
 def main():
     the_first_word()
     catalog = None
+    history = []  # прошлые версии каталога для отмены
     while True:
         try:
             choice = print_menu()
             if choice == 0:
                 break
-            if choice in ACTIONS:
-                catalog = ACTIONS[choice](catalog)
+            if choice == UNDO:
+                if len(history) == 0:
+                    error("Отменять нечего")
+                else:
+                    catalog = history.pop()
+                    success("Последнее изменение отменено")
+            elif choice in ACTIONS:
+                new_catalog = ACTIONS[choice](catalog)
+                if new_catalog is not catalog:
+                    history.append(catalog)
+                    catalog = new_catalog
             else:
                 error("Введён некорректный номер меню")
         except EOFError:
