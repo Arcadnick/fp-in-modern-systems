@@ -2,6 +2,7 @@
 
 from abc import ABC, abstractmethod
 
+from filmoteka.calculations import can_raise_rating, is_positive, is_valid_rating, is_valid_year
 from filmoteka.colors import BLUE, GREEN, RESET
 from filmoteka.exceptions import InvalidPropertyException, RatingException
 
@@ -27,7 +28,7 @@ class Cinematography(ABC):
 
     @release.setter
     def release(self, value):
-        if 1894 < value <= 2026:
+        if is_valid_year(value):
             self._release = value
         else:
             try:
@@ -44,7 +45,7 @@ class Cinematography(ABC):
 
     @rating.setter
     def rating(self, value):
-        if 0 < value <= 10:
+        if is_valid_rating(value):
             self._rating = value
         else:
             try:
@@ -83,7 +84,7 @@ class Cinematography(ABC):
 
     def raise_rating(self):
         """Поднять рейтинг на 1."""
-        if self._rating < 10:
+        if can_raise_rating(self._rating):
             self._rating += 1
             print(f"{GREEN}Рейтинг «{self.title}» успешно поднят на одно значение и составляет {self._rating}{RESET}")
         else:
@@ -106,7 +107,7 @@ class Film(Cinematography):
 
     @budget.setter
     def budget(self, value):
-        if value > 0:
+        if is_positive(value):
             self._budget = value
         else:
             try:
@@ -195,7 +196,7 @@ class Serial(Cartoon):
 
     @series.setter
     def series(self, value):
-        if value > 0:
+        if is_positive(value):
             self._series = value
         else:
             try:
@@ -212,7 +213,7 @@ class Serial(Cartoon):
 
     @seasons.setter
     def seasons(self, value):
-        if value > 0:
+        if is_positive(value):
             self._seasons = value
         else:
             try:

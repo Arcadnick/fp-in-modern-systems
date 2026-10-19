@@ -1,5 +1,6 @@
 """Зритель онлайн-кинотеатра: смотрит, оценивает и собирает свой плейлист."""
 
+from filmoteka.calculations import contains_same, is_valid_rating, rating_from_votes, recommendations
 from filmoteka.colors import CYAN, GREEN, RESET
 from filmoteka.exceptions import RatingException
 from filmoteka.playlist import Playlist
@@ -14,10 +15,7 @@ class Viewer:
         self.playlist = Playlist()
 
     def has_watched(self, film):
-        for item in self.history:
-            if item is film:
-                return True
-        return False
+        return contains_same(self.history, film)
 
     def watch(self, film):
         """Посмотреть произведение: запись в историю и +1 просмотр у произведения."""
@@ -30,14 +28,14 @@ class Viewer:
         if not self.has_watched(film):
             print(f"Нельзя оценить «{film.title}», пока {self.name} его не посмотрел(а)")
             return False
-        if score < 1 or score > 10:
+        if not is_valid_rating(score):
             raise RatingException(f"Неверная оценка {score}")
         if film.title in self.ratings:
             print(f"{self.name} уже оценивал(а) «{film.title}» на {self.ratings[film.title]}")
             return False
         self.ratings[film.title] = score
         film.votes.append(score)
-        film.rating = round(sum(film.votes) / len(film.votes))
+        film.rating = rating_from_votes(film.votes)
         print(f"{GREEN}Оценка принята. Новый рейтинг «{film.title}»: {film.rating}{RESET}")
         return True
 
@@ -50,16 +48,7 @@ class Viewer:
 
     def recommend(self, catalog_films, count=3):
         """Подобрать непросмотренные произведения любимых жанров, лучшие по рейтингу."""
-        result = []
-        for film in catalog_films:
-            if self.has_watched(film):
-                continue
-            for genre in film.genre.split(", "):
-                if genre in self.favorite_genres:
-                    result.append(film)
-                    break
-        result.sort(key=lambda item: item.rating, reverse=True)
-        result = result[:count]
+        result = recommendations(catalog_films, self.favorite_genres, self.history, count)
         print(f"{CYAN}Рекомендации для {self.name}:{RESET}")
         if len(result) == 0:
             print("  Подходящих произведений не нашлось")

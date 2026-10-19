@@ -1,5 +1,6 @@
 """Порт Playlist.cs: список произведений."""
 
+from filmoteka.calculations import contains_same, sorted_by_name, sorted_by_rating, unique_by_line
 from filmoteka.cinematography import Cartoon, Film, Serial
 from filmoteka.colors import BLACK_ON_GREEN, RESET
 from filmoteka.exceptions import EmptyPlaylistException, ReadingFromFileException
@@ -43,13 +44,13 @@ class Playlist:
 
     def sort_by_name(self):
         if len(self.cinema) > 0:
-            self.cinema.sort()
+            self.cinema = sorted_by_name(self.cinema)
         else:
             raise EmptyPlaylistException()
 
     def sort_by_rating(self):
         if len(self.cinema) > 0:
-            self.cinema.sort(key=lambda item: item.rating)
+            self.cinema = sorted_by_rating(self.cinema)
         else:
             raise EmptyPlaylistException()
 
@@ -60,10 +61,7 @@ class Playlist:
                 return
 
     def contains(self, item):
-        for element in self.cinema:
-            if element is item:
-                return True
-        return False
+        return contains_same(self.cinema, item)
 
     def clear(self):
         self.cinema.clear()
@@ -83,13 +81,7 @@ class Playlist:
 
     def remove_duplicates(self):
         """Удалить произведения, у которых совпадают все поля."""
-        seen = set()
-        unique = []
-        for item in self.cinema:
-            line = str(item)
-            if line not in seen:
-                seen.add(line)
-                unique.append(item)
+        unique = unique_by_line(self.cinema)
         removed = len(self.cinema) - len(unique)
         self.cinema = unique
         print(f"Удалено дубликатов: {removed}")

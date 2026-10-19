@@ -3,6 +3,7 @@
 import traceback
 from datetime import datetime
 
+from filmoteka.calculations import better_of, genre_matches, item_at, parse_genres, with_default_extension
 from filmoteka.catalog import Catalog
 from filmoteka.cinematography import Cartoon, Film, Serial
 from filmoteka.colors import BLACK_ON_GREEN, BLUE, CYAN, GREEN, RED, RESET
@@ -75,8 +76,8 @@ def get_file():
     if filename == "":
         print(f"{RED}Имя файла не введено{RESET}")
         return
-    if "." not in filename:
-        filename += ".txt"
+    if with_default_extension(filename) != filename:
+        filename = with_default_extension(filename)
         print("Имя было указано без расширения, поэтому файлу присвоено расширение .txt")
     try:
         catalog.films.save_to_file(filename)
@@ -100,8 +101,9 @@ def choose_film(prompt):
             n = int(input(f"{prompt} (0 — выход): "))
             if n == 0:
                 return None
-            if 0 < n <= catalog.films.count:
-                return catalog.films.get_all()[n - 1]
+            film = item_at(catalog.films.get_all(), n)
+            if film is not None:
+                return film
             raise NumberFilmException()
         except NumberFilmException:
             pass
@@ -134,14 +136,13 @@ def compare():
             raise IdenticalMoviesException()
     except IdenticalMoviesException:
         return
-    if first == second:
+    better = better_of(first, second)
+    if better is None:
         print(f"У фильмов одинаковый рейтинг: {first.rating}")
     else:
+        worse = second if better is first else first
         print("У фильмов разный рейтинг")
-        if first.rating > second.rating:
-            print(f"«{first.title}» ({first.rating}) лучше, чем «{second.title}» ({second.rating})")
-        else:
-            print(f"«{second.title}» ({second.rating}) лучше, чем «{first.title}» ({first.rating})")
+        print(f"«{better.title}» ({better.rating}) лучше, чем «{worse.title}» ({worse.rating})")
 
 
 def sort_by_name():
@@ -163,7 +164,7 @@ def filter_films():
     choice = input("> ").strip()
     if choice == "1":
         genre = input("Введите жанр: ").strip()
-        result = catalog.films.find_all(lambda item: genre.lower() in item.genre.lower())
+        result = catalog.films.find_all(lambda item: genre_matches(item, genre))
     elif choice == "2":
         kind = input("Введите тип: ").strip()
         types = {"film": Film, "cartoon": Cartoon, "serial": Serial}
@@ -192,11 +193,7 @@ def register_viewer():
         print(f"{RED}Имя не введено{RESET}")
         return
     genres = input("Любимые жанры через запятую (например, Comedy, Adventure): ")
-    favorite_genres = []
-    for genre in genres.split(","):
-        if genre.strip() != "":
-            favorite_genres.append(genre.strip())
-    catalog.register_viewer(name, favorite_genres)
+    catalog.register_viewer(name, parse_genres(genres))
 
 
 def choose_viewer():
