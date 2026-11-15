@@ -59,9 +59,12 @@ class Cinematography:
         self._rating = checked(value, is_valid_rating,
                                f"Неверный рейтинг ({value}), допустимо {MIN_RATING}..{MAX_RATING}")
 
+    def can_raise_rating(self):
+        return can_raise_rating(self.rating)
+
     def with_raised_rating(self):
         """Копия с рейтингом на 1 больше."""
-        if not can_raise_rating(self.rating):
+        if not self.can_raise_rating():
             raise RatingException(f"Рейтинг «{self.title}» уже максимальный, поднять его нельзя")
         return copy_with(self, rating=self.rating + 1)
 

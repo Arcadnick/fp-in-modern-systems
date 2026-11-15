@@ -23,7 +23,7 @@ class Statistics(NamedTuple):
     top: list           # лучшие по рейтингу
     most_viewed: object  # самое просматриваемое или None
     total_views: int
-    viewers: int
+    viewer_count: int
 
 
 def by_rating(item):
@@ -113,12 +113,12 @@ def most_viewed(films):
     return sorted_by(films, lambda film: film.views, reverse=True)[0]
 
 
-def statistics(films, viewers, top):
+def statistics(films, viewer_count, top):
     """Средний рейтинг по жанрам, топ по рейтингу и просмотры."""
     return Statistics(
         by_genre=average_rating_by_genre(films),
         top=top_by_rating(films, top),
         most_viewed=most_viewed(films),
         total_views=total_views(films),
-        viewers=viewers,
+        viewer_count=viewer_count,
     )

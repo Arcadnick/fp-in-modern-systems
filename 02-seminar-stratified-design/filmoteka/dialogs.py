@@ -58,6 +58,19 @@ def show_films(films):
     console.show_lines(views.numbered(films))
 
 
+def show_found(films):
+    if len(films) == 0:
+        console.show("Ничего не найдено")
+    else:
+        show_films(films)
+
+
+def show_cards(films):
+    for film in films:
+        console.card_title("\nИнформация о произведении:")
+        console.show_lines(views.film_details(film))
+
+
 def choose_film(catalog, prompt):
     """Спросить номер произведения. 0 — отказ, вернёт None."""
     show_films(catalog.all_films())

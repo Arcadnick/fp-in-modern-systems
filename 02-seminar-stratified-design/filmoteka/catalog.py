@@ -86,6 +86,10 @@ class Catalog:
             raise ViewerException(f"Зритель {name} уже зарегистрирован")
         return copy_with(self, viewers=self.viewers + (Viewer(name, favorite_genres),))
 
+    def can_raise(self, film):
+        """Можно ли поднять рейтинг произведения."""
+        return film.can_raise_rating()
+
     def raise_rating(self, film):
         """(новый каталог, произведение с поднятым рейтингом)."""
         raised = film.with_raised_rating()

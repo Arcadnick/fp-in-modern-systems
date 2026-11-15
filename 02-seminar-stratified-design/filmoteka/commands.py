@@ -9,7 +9,6 @@
 from filmoteka import console, dialogs, views
 from filmoteka.catalog import Catalog
 from filmoteka.constructors import make_test_catalog
-from filmoteka.exceptions import RatingException
 from filmoteka.storage import load_catalog, save_catalog
 
 
@@ -47,9 +46,7 @@ def load_test_data(catalog):
 
 def show_all(catalog):
     catalog.check_not_empty()
-    for film in catalog.all_films():
-        console.card_title("\nИнформация о произведении:")
-        console.show_lines(views.film_details(film))
+    dialogs.show_cards(catalog.all_films())
     return catalog
 
 
@@ -59,13 +56,12 @@ def raise_rating(catalog):
         film = dialogs.choose_film(catalog, "Введите номер фильма, рейтинг которого хотите поднять")
         if film is None:
             return catalog
-        try:
+        if catalog.can_raise(film):
             new_catalog, raised = catalog.raise_rating(film)
             console.success(views.raised_message(raised))
             return new_catalog
-        except RatingException as e:
-            console.error(e)
-            console.header("Выберите другой фильм или введите 0 для выхода")
+        console.error(views.max_rating_message(film))
+        console.header("Выберите другой фильм или введите 0 для выхода")
 
 
 def compare(catalog):
@@ -109,10 +105,7 @@ def filter_films(catalog):
     else:
         console.error("Введён некорректный пункт")
         return catalog
-    if len(result) == 0:
-        console.show("Ничего не найдено")
-    else:
-        dialogs.show_films(result)
+    dialogs.show_found(result)
     return catalog
 
 
@@ -193,8 +186,7 @@ def recommend(catalog):
 
 def statistics(catalog):
     catalog.check_not_empty()
-    for section in views.statistics_sections(catalog.statistics(top=3)):
-        console.show_section(section)
+    console.show_sections(views.statistics_sections(catalog.statistics(top=3)))
     return catalog
 
 

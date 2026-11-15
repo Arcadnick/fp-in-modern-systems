@@ -48,6 +48,11 @@ def show_section(section):
     show_lines(lines)
 
 
+def show_sections(sections):
+    for section in sections:
+        show_section(section)
+
+
 def ask_text(prompt):
     return input(prompt).strip()
 

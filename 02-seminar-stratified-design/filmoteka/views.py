@@ -91,6 +91,10 @@ def comparison_lines(result):
 
 # --- Сообщения о результате действия ---
 
+def max_rating_message(film):
+    return f"Рейтинг «{film.title}» уже максимальный, поднять его нельзя"
+
+
 def raised_message(film):
     return f"Рейтинг «{film.title}» успешно поднят на одно значение и составляет {film.rating}"
 
@@ -153,5 +157,5 @@ def statistics_sections(stats):
         ("Средний рейтинг по жанрам:", [f"  {genre}: {rating:.1f}" for genre, rating in stats.by_genre.items()]),
         (f"Топ-{len(stats.top)} по рейтингу:",
          [f"  {i}. {film.title} — {film.rating}" for i, film in enumerate(stats.top, start=1)]),
-        ("Просмотры:", views + [f"  Зрителей зарегистрировано: {stats.viewers}"]),
+        ("Просмотры:", views + [f"  Зрителей зарегистрировано: {stats.viewer_count}"]),
     ]
