@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Стратифицированный дизайн фильмотеки</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --page: #e9ecef;
+    --text: #1d2329;
+    --muted: #5f6b76;
+    --line: #d5dbe1;
+    --accent: #2463a8;
+    --accent-soft: #e8f0fa;
+    --action: #c0392b;
+    --action-soft: #fbe1dd;
+    --calc: #1e8449;
+    --calc-soft: #dcf2e1;
+    --data: #2463a8;
+    --data-soft: #dbe8f8;
+    --warn: #d35400;
+    --code-bg: #f5f7f9;
+    --mono: "JetBrains Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace;
+    --sans: "Helvetica Neue", Helvetica, Arial, "DejaVu Sans", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--page); color: var(--text); font-family: var(--sans); }
+
+  /* Слайд 1280×720; на экране масштабируется под окно */
+  .deck { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .slide {
+    width: 1280px; height: 720px; background: var(--bg); position: relative;
+    padding: 44px 56px 40px; display: none; flex-direction: column;
+    transform-origin: center center; box-shadow: 0 6px 30px rgba(0, 0, 0, .12);
+  }
+  .slide.active { display: flex; }
+  .slide h2 { margin: 0 0 6px; font-size: 34px; letter-spacing: -.3px; }
+  .slide .lead { margin: 0 0 18px; color: var(--muted); font-size: 19px; }
+  .num { position: absolute; right: 30px; bottom: 18px; color: var(--muted); font-size: 14px; }
+  .tag {
+    display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 14px; font-weight: 600;
+    background: var(--accent-soft); color: var(--accent); vertical-align: middle; margin-left: 10px;
+  }
+  .grow { flex: 1; min-height: 0; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  .cols-3-2 { display: grid; grid-template-columns: 3fr 2fr; gap: 28px; }
+  .cols-2-3 { display: grid; grid-template-columns: 2fr 3fr; gap: 28px; }
+  ul { margin: 0; padding-left: 22px; }
+  li { margin: 0 0 8px; font-size: 18px; line-height: 1.38; }
+  p { font-size: 18px; line-height: 1.4; margin: 0 0 10px; }
+  .small, .small li { font-size: 15px; }
+  code { font-family: var(--mono); font-size: .9em; background: var(--code-bg); padding: 1px 4px; border-radius: 4px; }
+  pre {
+    margin: 0; padding: 12px 14px; background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px;
+    font-family: var(--mono); font-size: 14.5px; line-height: 1.5; white-space: pre; overflow: hidden;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  .cap { font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); font-weight: 700; margin: 0 0 6px; }
+  .before .cap { color: var(--action); }
+  .after .cap { color: var(--calc); }
+  .c { color: #7a8691; }       /* комментарий в коде */
+  .k { color: #8e3cb0; }       /* ключевое слово */
+  .s { color: #1e7a3c; }       /* строка */
+  .bad { background: #fde3dc; border-radius: 3px; }
+  .good { background: #dcf2e1; border-radius: 3px; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 15.5px; align-self: start; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 13.5px; text-transform: uppercase; letter-spacing: .4px; }
+  td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr.hl td { background: #f3f8ee; }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+  .pa { background: var(--action-soft); color: var(--action); }
+  .pc { background: var(--calc-soft); color: var(--calc); }
+  .pd { background: var(--data-soft); color: var(--data); }
+
+  .figure { display: flex; align-items: center; justify-content: center; min-height: 0; height: 100%; }
+  .figure a { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+  .figure img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+  .graph-wrap { display: grid; grid-template-columns: 1fr 250px; grid-template-rows: minmax(0, 1fr); gap: 22px; min-height: 0; }
+  .grow.cols, .grow.cols-3-2, .grow.cols-2-3 { grid-template-rows: minmax(0, 1fr); }
+  .box li { font-size: 17px; }
+  .legend { font-size: 14.5px; line-height: 1.45; }
+  .legend div { margin-bottom: 7px; }
+  .sw { display: inline-block; width: 18px; height: 12px; border-radius: 3px; margin-right: 7px; vertical-align: -1px; border: 1px solid; }
+  .stat { font-size: 30px; font-weight: 700; color: var(--accent); line-height: 1.1; }
+  .stat small { display: block; font-size: 13px; font-weight: 500; color: var(--muted); }
+  .box { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .box h3 { margin: 0 0 8px; font-size: 19px; }
+  a { color: var(--accent); }
+
+  /* Титул */
+  .title-slide { justify-content: center; padding-left: 90px; }
+  .title-slide .kicker { color: var(--accent); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; font-size: 16px; margin-bottom: 18px; }
+  .title-slide h1 { font-size: 56px; margin: 0 0 14px; letter-spacing: -1px; line-height: 1.05; }
+  .title-slide .sub { font-size: 23px; color: var(--muted); margin-bottom: 52px; max-width: 900px; line-height: 1.35; }
+  .title-slide .who { font-size: 21px; line-height: 1.5; }
+  .title-slide .bar { position: absolute; left: 0; top: 0; bottom: 0; width: 14px;
+    background: linear-gradient(var(--action) 0 33%, var(--calc) 33% 66%, var(--data) 66%); }
+
+  .hint { position: fixed; left: 14px; bottom: 10px; font-size: 12px; color: #8a949e; }
+
+  @media print {
+    @page { size: 1280px 720px; margin: 0; }
+    html, body { background: #fff; }
+    .deck { display: block; width: auto; height: auto; overflow: visible; }
+    .slide { display: flex !important; transform: none !important; box-shadow: none; page-break-after: always; break-after: page; }
+    .hint { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+<!-- 1 -->
+<section class="slide title-slide">
+  <div class="bar"></div>
+  <div class="kicker">Семинар 2 · Неизменяемость и стратифицированный дизайн</div>
+  <h1>Стратифицированный дизайн<br>консольной фильмотеки</h1>
+  <div class="sub">Граф вызовов до и после, семь изменений по шаблонам «простая реализация», «барьер абстракций», «минимальный интерфейс», «удобные слои»</div>
+  <div class="who">Орлов Алексей Олегович, ИВТ-14МО<br>
+    <span style="color:var(--muted)">Технологии функционального программирования в современных ИС · 2026</span></div>
+  <div class="num">1</div>
+</section>
+
+<!-- 2 -->
+<section class="slide">
+  <h2>Приложение и структуры данных</h2>
+  <p class="lead">Python, консоль, данные в памяти. Исходное состояние — результат семинара 1: вычисления выделены, данные неизменяемые (copy-on-write)</p>
+  <div class="cols grow" style="grid-template-columns: 1fr 1fr 300px; gap: 18px;">
+    <div class="figure"><img src="../diagrams/data-before.svg" alt="Структуры данных до изменений"></div>
+    <div class="figure"><img src="../diagrams/data-after.svg" alt="Структуры данных после изменений"></div>
+    <div>
+      <ul class="small">
+        <li>4 сущности: <code>Cinematography</code> (+ <code>Film</code>, <code>Cartoon</code>, <code>Serial</code>), <code>Playlist</code>, <code>Viewer</code>, <code>Catalog</code></li>
+        <li>18 пунктов меню: файл, просмотр, оценки, рекомендации, статистика, отмена</li>
+        <li><b>Что изменилось в данных:</b></li>
+        <li><code>Playlist</code>: 21 → 8 методов</li>
+        <li>классы произведений без <code>__str__</code>, <code>__lt__</code>, <code>details</code>, <code>describe</code>; вместо них — кортеж полей <code>FIELDS</code></li>
+        <li>статистика: словарь со строковыми ключами → <code>Statistics</code> (NamedTuple), добавлен <code>Comparison</code></li>
+      </ul>
+    </div>
+  </div>
+  <div class="num">2</div>
+</section>
+
+<!-- 3 -->
+<section class="slide">
+  <h2>Граф вызовов: исходное состояние</h2>
+  <p class="lead">Строится скриптом <code>diagrams/callgraph.py</code> по исходному коду: 143 функции и метода, 36 конструкций языка, 486 стрелок</p>
+  <div class="graph-wrap grow">
+    <div class="figure"><a href="../diagrams/callgraph-before.svg" target="_blank"><img src="../diagrams/callgraph-before.svg" alt="Граф вызовов до изменений"></a></div>
+    <div class="legend">
+      <div><span class="sw" style="background:var(--action-soft);border-color:var(--action)"></span>действие</div>
+      <div><span class="sw" style="background:var(--calc-soft);border-color:var(--calc)"></span>вычисление</div>
+      <div><span class="sw" style="background:var(--data-soft);border-color:var(--data)"></span>данные: поля, исключения</div>
+      <div><span class="sw" style="background:#ececec;border-color:#7a7a7a"></span>язык: функции, методы str/list, for, [ ]</div>
+      <div><span class="sw" style="background:var(--warn);border-color:var(--warn);height:4px"></span>верхний слой → данные и язык напрямую</div>
+      <p class="small" style="margin-top:14px">Слой — полоса с назначением. Если функции слоя вызывают друг друга, он делится на подуровни (цифры слева), поэтому все стрелки идут вниз.</p>
+      <p class="small">Учтены неявные вызовы: <code>str(film)</code> → <code>__str__</code>, <code>sorted</code> → <code>__lt__</code>, <code>len</code> и <code>for</code> по плейлисту.</p>
+      <p class="small">Категория «действие» вычисляется: функция вызывает <code>input</code>, <code>print</code>, файлы — сама или через другие.</p>
+    </div>
+  </div>
+  <div class="num">3</div>
+</section>
+
+<!-- 4 -->
+<section class="slide">
+  <h2>Слои исходного состояния и разметка</h2>
+  <p class="lead">Слои совпадают с модулями, а не с уровнями абстракции: 11 слоёв, 29 подуровней</p>
+  <div class="cols-3-2 grow">
+    <table>
+      <tr><th>Слой</th><th>Что в нём</th><th>Категория</th></tr>
+      <tr><td>Цикл меню</td><td><code>main</code></td><td><span class="pill pa">действие</span></td></tr>
+      <tr><td>Команды меню</td><td>17 команд, <code>choose_film</code>, <code>check_data</code></td><td><span class="pill pa">действия</span></td></tr>
+      <tr><td>Консоль и файлы</td><td><code>success</code>, <code>print_menu</code>, <code>storage</code></td><td><span class="pill pa">действия</span></td></tr>
+      <tr><td>Конструкторы</td><td><code>parse_playlist</code>, тестовые данные</td><td><span class="pill pc">вычисления</span></td></tr>
+      <tr><td>Каталог</td><td>15 методов <code>Catalog</code></td><td><span class="pill pc">вычисления</span></td></tr>
+      <tr><td>Зритель и плейлист</td><td>27 методов</td><td><span class="pill pc">вычисления</span></td></tr>
+      <tr><td>Операции над произведениями</td><td>конструкторы, сеттеры, <code>with_*</code></td><td><span class="pill pc">вычисления</span></td></tr>
+      <tr><td>calculations.py</td><td>31 функция вперемешку</td><td><span class="pill pc">вычисления</span></td></tr>
+      <tr><td>Представление произведений</td><td><code>__str__</code>, <code>__lt__</code>, <code>details</code></td><td><span class="pill pc">вычисления</span></td></tr>
+      <tr><td>Данные · Язык</td><td>поля, исключения · 36 конструкций</td><td><span class="pill pd">данные</span></td></tr>
+    </table>
+    <div>
+      <p class="cap">Спорные места</p>
+      <ul class="small">
+        <li><b>Cinematography в двух слоях:</b> <code>with_*</code> вызывают <code>calculations.py</code>, а <code>calculations.py</code> вызывает <code>__str__</code> (дубликаты) и <code>__lt__</code> (сортировка) — пришлось поставить их ниже</li>
+        <li><b><code>__str__</code> отвечает за три вещи:</b> строку файла, ключ дубликатов и строку на экране</li>
+        <li><b>calculations.py — один слой</b> для <code>copy_with</code> и <code>recommendations</code></li>
+        <li><b><code>check_data</code></b> — вычисление в слое команд</li>
+        <li><b>Текст для экрана в данных:</b> <code>Viewer.profile_lines</code>, <code>Playlist.numbered_lines</code></li>
+      </ul>
+      <p class="cap" style="margin-top:12px">Цифры</p>
+      <ul class="small">
+        <li>22 обращения меню к внутренностям каталога и плейлиста</li>
+        <li>21 функция верхних слоёв работает с данными и языком напрямую</li>
+        <li>самая длинная стрелка: <code>writer</code> → <code>details</code>, 7 слоёв</li>
+      </ul>
+    </div>
+  </div>
+  <div class="num">4</div>
+</section>
+
+<!-- 5 -->
+<section class="slide">
+  <h2>Изменения 1 и 2</h2>
+  <p class="lead">Сначала — нижние слои: из чего строится всё остальное</p>
+  <div class="cols grow">
+    <div>
+      <p><b>1. calculations.py разделён по уровням</b><span class="tag">удобные слои</span></p>
+      <p class="small">Функции разного уровня лежали в одном модуле. Теперь у каждого модуля один уровень, и на графе это четыре разных места.</p>
+<pre><span class="bad">calculations.py</span>  <span class="c"># 192 строки, 30 функций</span>
+ ├─ <span class="good">generic.py</span>   <span class="c"># не знает о фильмах</span>
+ │    copy_with, find_first, sorted_by, group_by,
+ │    replaced, unique_by, item_at, average
+ ├─ <span class="good">rules.py</span>     <span class="c"># на них опираются классы</span>
+ │    is_valid_year, is_valid_rating,
+ │    can_raise_rating, rating_from_votes
+ ├─ <span class="good">queries.py</span>   <span class="c"># запросы к спискам произведений</span>
+ │    top_by_rating, recommendations,
+ │    average_rating_by_genre, most_viewed
+ └─ <span class="good">records.py</span>   <span class="c"># формат файла</span></pre>
+      <p class="small" style="margin-top:8px">На графе после: слои «Общие операции» и «Правила», <code>queries</code> и <code>records</code> — в «Строительных блоках».</p>
+    </div>
+    <div>
+      <p><b>2. Playlist: 21 метод → 9 (→ 8)</b><span class="tag">минимальный интерфейс</span></p>
+      <p class="small">Из C# перешли 8 методов, которые никто не вызывал. Остальное выражается через общие операции, а решение (как сортировать, что считать дубликатом) принимает каталог.</p>
+<pre><span class="c"># было: add_first, add_last, get_first, get_last, clear,</span>
+<span class="c">#       contains, remove, to_lines, get_all, count, find_all,</span>
+<span class="c">#       sort_by_name, sort_by_rating, sort_with, check_not_empty…</span>
+<span class="k">class</span> Playlist:
+    <span class="k">def</span> __iter__(self) / __len__(self)
+    <span class="k">def</span> at(self, number):
+        <span class="k">return</span> item_at(self.cinema, number)
+    <span class="k">def</span> filtered(self, predicate): …
+    <span class="k">def</span> sorted_with(self, sorter): …
+    <span class="k">def</span> replaced(self, old, new):
+        <span class="k">return</span> Playlist(replaced(self.cinema, old, new))
+    <span class="k">def</span> unique_by(self, key):
+        <span class="k">return</span> Playlist(unique_by(self.cinema, key))</pre>
+    </div>
+  </div>
+  <div class="num">5</div>
+</section>
+
+<!-- 6 -->
+<section class="slide">
+  <h2>Изменение 3. Каталог — барьер абстракций<span class="tag">барьер абстракций</span></h2>
+  <p class="lead">Меню знало, что произведения лежат в <code>Playlist</code>, а зрители — в кортеже. Теперь оно работает только через методы каталога</p>
+  <div class="cols grow">
+    <div class="before">
+      <p class="cap">Было: меню лезет внутрь</p>
+<pre><span class="k">def</span> check_data(catalog):
+    <span class="k">if</span> catalog <span class="k">is None or</span> <span class="bad">len(catalog.films)</span> == 0:
+        <span class="k">raise</span> NoDataUploadedException()
+
+film = item_at(<span class="bad">films.get_all()</span>, n)
+
+<span class="k">if</span> <span class="bad">len(catalog.viewers)</span> == 0: …
+print(<span class="s">"Зрители: "</span> + <span class="s">", "</span>.join(
+      viewer.name <span class="k">for</span> viewer <span class="k">in</span> <span class="bad">catalog.viewers</span>))
+
+films = viewer.recommend(<span class="bad">catalog.films</span>)
+playlist = load_playlist(filename)
+<span class="k">return</span> Catalog(<span class="bad">playlist</span>)</pre>
+    </div>
+    <div class="after">
+      <p class="cap">Стало: только методы каталога</p>
+<pre>catalog.<span class="good">check_not_empty</span>()
+
+film = catalog.<span class="good">film_at</span>(n)
+
+<span class="k">if not</span> catalog.<span class="good">has_viewers</span>(): …
+console.show(views.viewers_line(
+    catalog.<span class="good">viewer_names</span>()))
+
+films = catalog.<span class="good">recommendations_for</span>(viewer)
+<span class="k">return</span> load_catalog(filename)   <span class="c"># storage сам собирает Catalog</span></pre>
+      <ul class="small" style="margin-top:14px">
+        <li>22 метода — интерфейс для слоёв выше: <code>is_empty</code>, <code>all_films</code>, <code>film_at</code>, <code>films_of_kind</code>, <code>watch</code>, <code>rate</code>, <code>statistics</code>…</li>
+        <li>Каталог сам создаёт свой <code>Playlist</code>: снаружи плейлист не нужен никому</li>
+        <li>Обращений к внутренностям извне: <b>22 → 0</b> (считает скрипт)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="num">6</div>
+</section>
+
+<!-- 7 -->
+<section class="slide">
+  <h2>Изменение 4. Правила — вниз из команд меню<span class="tag">простая реализация</span></h2>
+  <p class="lead">В одной функции были и <code>input</code>, и правила сравнения, и разбор типов. Правила опущены на свой уровень — в <code>queries</code> и каталог</p>
+  <div class="cols grow">
+    <div class="before">
+      <p class="cap">Было: команда «Сравнить два фильма»</p>
+<pre>first = choose_film(catalog.films, <span class="s">"…первого…"</span>)
+…
+<span class="bad">if first is second:</span>
+<span class="bad">    raise IdenticalMoviesException()</span>
+<span class="bad">better = better_of(first, second)</span>
+<span class="k">if</span> better <span class="k">is None</span>:
+    print(f<span class="s">"…одинаковый рейтинг: {first.rating}"</span>)
+<span class="k">else</span>:
+    <span class="bad">worse = second if better is first else first</span>
+    print(<span class="s">"У фильмов разный рейтинг"</span>)
+    print(f<span class="s">"«{better.title}» ({better.rating}) лучше…"</span>)
+
+<span class="c"># фильтр по типу — таблица классов прямо в меню</span>
+<span class="bad">types = {"film": Film, "cartoon": Cartoon, …}</span>
+<span class="bad">… lambda item: type(item) is types[kind.lower()]</span></pre>
+    </div>
+    <div class="after">
+      <p class="cap">Стало: правило — в queries.py</p>
+<pre><span class="k">def</span> compare_films(first, second):
+    <span class="k">if</span> first <span class="k">is</span> second:
+        <span class="k">raise</span> IdenticalMoviesException()
+    better = better_of(first, second)
+    <span class="k">if</span> better <span class="k">is None</span>:
+        <span class="k">return</span> Comparison(first, second, equal=True)
+    <span class="k">return</span> Comparison(better, …, equal=False)
+
+KINDS = {<span class="s">"film"</span>: Film, <span class="s">"cartoon"</span>: Cartoon, <span class="s">"serial"</span>: Serial}</pre>
+      <ul class="small" style="margin-top:12px">
+        <li>Фильтры: <code>catalog.films_of_genre</code>, <code>catalog.films_of_kind</code></li>
+        <li>Статистика: <code>Statistics</code> (NamedTuple) вместо <code>stats["by_genre"]</code></li>
+        <li><code>without_duplicates()</code> сразу возвращает, сколько удалено: меню не вычитает длины</li>
+        <li>Команда: спросить → вызвать каталог → показать</li>
+      </ul>
+    </div>
+  </div>
+  <div class="num">7</div>
+</section>
+
+<!-- 8 -->
+<section class="slide">
+  <h2>Изменения 5 и 6</h2>
+  <p class="lead">У классов произведений остаются только данные и copy-on-write. Текст для экрана и формат файла — отдельно</p>
+  <div class="cols grow">
+    <div>
+      <p><b>5. Слой представления views.py</b><span class="tag">удобные слои</span></p>
+      <p class="small"><code>details()</code> и <code>describe()</code> в 4 классах, <code>profile_lines()</code>, все f-строки сообщений из команд → чистые функции «объект → строки».</p>
+<pre><span class="k">def</span> film_extra(film):
+    <span class="k">return</span> [f<span class="s">"Бюджет: {film.budget}"</span>,
+            f<span class="s">"Живые спецэффекты: {film.effect}"</span>]
+
+KIND_VIEWS = {
+    Film: (film_extra, <span class="s">"Это фильм"</span>),
+    Cartoon: (cartoon_extra, <span class="s">"Это мультфильм"</span>),
+    Serial: (serial_extra, <span class="s">"Это мультсериал"</span>),
+}
+
+<span class="k">def</span> film_details(film):
+    extra, description = KIND_VIEWS[type(film)]
+    <span class="k">return</span> common_details(film) + extra(film) + [description]</pre>
+      <p class="small" style="margin-top:8px">Команды больше не читают поля: <code>views.watched_message(viewer, film)</code>.</p>
+    </div>
+    <div>
+      <p><b>6. Формат файла — в records.py</b><span class="tag">минимальный интерфейс</span></p>
+      <p class="small">Четыре <code>__str__</code> → одна функция по кортежу полей. Дубликаты и сортировка — по ключам предметной области: вычисления больше не зависят от формата файла.</p>
+<pre><span class="k">class</span> Film(Cinematography):
+    FIELDS = Cinematography.FIELDS + (<span class="s">"budget"</span>, <span class="s">"effect"</span>)
+
+<span class="k">def</span> to_record(film):                  <span class="c"># records.py</span>
+    <span class="k">return</span> <span class="s">"|"</span>.join([type(film).__name__] +
+        [str(getattr(film, name)) <span class="k">for</span> name <span class="k">in</span> film.FIELDS])
+
+<span class="k">def</span> identity(film):                   <span class="c"># queries.py</span>
+    <span class="k">return</span> (type(film).__name__,) + tuple(
+        getattr(film, name) <span class="k">for</span> name <span class="k">in</span> film.FIELDS)
+
+<span class="k">def</span> by_title_and_year(item):          <span class="c"># вместо __lt__</span>
+    <span class="k">return</span> item.title, item.release</pre>
+      <p class="small" style="margin-top:8px">Разбор строк файла тоже переехал из <code>constructors.py</code> в <code>records.py</code>.</p>
+    </div>
+  </div>
+  <div class="num">8</div>
+</section>
+
+<!-- 9 -->
+<section class="slide">
+  <h2>Изменение 7. main.py разделён по уровням<span class="tag">простая реализация</span></h2>
+  <p class="lead">399 строк: меню, 17 команд, печать, ввод чисел, журнал ошибок и отмена в одном модуле</p>
+  <div class="cols-2-3 grow">
+    <div>
+      <table>
+        <tr><th>Модуль</th><th>Что делает</th></tr>
+        <tr><td><code>main.py</code></td><td>цикл меню, 34 строки</td></tr>
+        <tr><td><code>commands.py</code></td><td>17 команд: спросить → каталог → показать</td></tr>
+        <tr><td><code>dialogs.py</code></td><td>выбор фильма и зрителя, вопросы, отмена, ошибки</td></tr>
+        <tr><td><code>history.py</code></td><td>версии каталога для отмены (кортеж)</td></tr>
+        <tr><td><code>console.py</code></td><td>единственное место с <code>input</code> и <code>print</code></td></tr>
+        <tr><td><code>storage.py</code></td><td>файлы и журнал ошибок</td></tr>
+      </table>
+      <p class="cap" style="margin-top:16px">Продолжение по графу</p>
+      <ul class="small">
+        <li>Граф «после» показал <code>for</code>, <code>len</code> и <code>except RatingException</code> в командах → <code>dialogs.show_cards</code>, <code>show_found</code>, <code>catalog.can_raise</code></li>
+        <li><code>records.py</code> перестал создавать <code>Catalog</code>: иначе формат файла стоял бы выше каталога</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cap">Цикл меню после</p>
+<pre><span class="k">def</span> main():
+    dialogs.greet()
+    catalog, history = Catalog(), ()
+    <span class="k">while True</span>:
+        <span class="k">try</span>:
+            choice = dialogs.ask_menu_choice(UNDO)
+            <span class="k">if</span> choice == 0:
+                <span class="k">break</span>
+            <span class="k">if</span> choice == UNDO:
+                catalog, history = dialogs.undo(catalog, history)
+            <span class="k">elif</span> choice <span class="k">in</span> COMMANDS:
+                new_catalog = COMMANDS[choice](catalog)
+                catalog, history = new_catalog, remember(history, catalog, new_catalog)
+            <span class="k">else</span>:
+                dialogs.wrong_menu_item()
+        <span class="k">except</span> EOFError:
+            <span class="k">break</span>
+        <span class="k">except</span> Exception <span class="k">as</span> e:
+            dialogs.report_error(e)
+    dialogs.goodbye()</pre>
+      <p class="small" style="margin-top:8px">Все вызовы на одном уровне: диалоги, команды, история. Раньше здесь же были <code>print</code>, <code>history.pop()</code> и запись в журнал.</p>
+    </div>
+  </div>
+  <div class="num">9</div>
+</section>
+
+<!-- 10 -->
+<section class="slide">
+  <h2>Граф вызовов: после изменений</h2>
+  <p class="lead">Слой — уровень абстракции: на одном уровне стоят каталог (предметная область), диалоги и файлы (интерфейс)</p>
+  <div class="graph-wrap grow">
+    <div class="figure"><a href="../diagrams/callgraph-after.svg" target="_blank"><img src="../diagrams/callgraph-after.svg" alt="Граф вызовов после изменений"></a></div>
+    <div class="legend">
+      <div><b>Приложение</b> — цикл меню</div>
+      <div><b>Сценарии меню</b> — 17 команд</div>
+      <div><b>Операции</b> — <code>Catalog</code> (барьер), <code>dialogs</code>, <code>storage</code>, <code>history</code></div>
+      <div><b>Строительные блоки</b> — <code>views</code>, <code>records</code>, <code>console</code>, <code>Playlist</code>, <code>queries</code></div>
+      <div><b>Сущности</b> — данные и copy-on-write</div>
+      <div><b>Правила</b> — допустимые значения, рейтинг</div>
+      <div><b>Общие операции</b> — <code>generic</code></div>
+      <div><b>Данные · Язык Python</b></div>
+      <p class="small" style="margin-top:12px">Действия — только в <code>main</code>, <code>commands</code>, <code>dialogs</code>, <code>console</code>, <code>storage</code>. Всё ниже «Операций», кроме консоли, — вычисления.</p>
+      <p class="small">Оранжевая стрелка одна: цикл меню берёт команду из таблицы по номеру.</p>
+    </div>
+  </div>
+  <div class="num">10</div>
+</section>
+
+<!-- 11 -->
+<section class="slide">
+  <h2>Сравнение графов</h2>
+  <p class="lead">Все числа считает <code>callgraph.py</code> по коду — <code>diagrams/callgraph-before.md</code> и <code>callgraph-after.md</code></p>
+  <div class="cols-3-2 grow">
+    <table>
+      <tr><th>Показатель</th><th class="n">До</th><th class="n">После</th></tr>
+      <tr class="hl"><td>Слоёв с назначением (с языком)</td><td class="n">11</td><td class="n">9</td></tr>
+      <tr class="hl"><td>Подуровней</td><td class="n">29</td><td class="n">19</td></tr>
+      <tr class="hl"><td>Самая длинная стрелка между функциями, слоёв</td><td class="n">7</td><td class="n">4</td></tr>
+      <tr class="hl"><td>Стрелок между функциями через 3+ слоя</td><td class="n">49</td><td class="n">16</td></tr>
+      <tr class="hl"><td>Функций верхних слоёв, напрямую зависящих от данных и языка</td><td class="n">21</td><td class="n">1</td></tr>
+      <tr class="hl"><td>Обращений к внутренностям каталога и плейлиста извне</td><td class="n">22</td><td class="n">0</td></tr>
+      <tr><td>Функций и методов</td><td class="n">143</td><td class="n">175</td></tr>
+      <tr><td>— из них действий</td><td class="n">33</td><td class="n">52</td></tr>
+      <tr><td>Стрелок</td><td class="n">486</td><td class="n">501</td></tr>
+    </table>
+    <div>
+      <p class="cap">Устранённые длинные стрелки</p>
+      <ul class="small">
+        <li><code>writer</code> → <code>Cinematography.details</code> — 7 слоёв (изм. 5)</li>
+        <li><code>compare</code> → <code>better_of</code> — 6 (изм. 4)</li>
+        <li><code>choose_film</code> → <code>item_at</code>, <code>get_all</code> — 6 (изм. 2, 3)</li>
+        <li><code>filter_films</code> → <code>genre_matches</code>, <code>find_all</code> — 6 (изм. 3, 4)</li>
+        <li><code>register_viewer</code> → <code>parse_genres</code> — 6 (изм. 7)</li>
+        <li>calculations → <code>__str__</code>, <code>__lt__</code>: вычисление зависело от формата файла (изм. 6)</li>
+      </ul>
+      <p class="cap" style="margin-top:12px">Что осталось</p>
+      <ul class="small">
+        <li>4 слоя: <code>Catalog</code> → <code>copy_with</code>, <code>find_first</code> — общие операции copy-on-write</li>
+        <li>Функций больше на 32, действий — на 19: мелкие функции консоли и диалогов</li>
+      </ul>
+    </div>
+  </div>
+  <div class="num">11</div>
+</section>
+
+<!-- 12 -->
+<section class="slide">
+  <h2>Выводы</h2>
+  <p class="lead">Слои стали уровнями абстракции: каждый вызывает соседний слой, а не язык через голову</p>
+  <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 22px; margin-bottom: 22px;">
+    <div class="box"><div class="stat">7 → 4<small>самая длинная стрелка между функциями, слоёв</small></div></div>
+    <div class="box"><div class="stat">22 → 0<small>обращений к внутренностям каталога и плейлиста извне</small></div></div>
+    <div class="box"><div class="stat">21 → 1<small>функций верхних слоёв работают с данными и языком напрямую</small></div></div>
+    <div class="box"><div class="stat">11 → 9<small>слоёв; подуровней 29 → 19</small></div></div>
+  </div>
+  <div class="grow" style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 22px; align-items: start;">
+    <div class="box">
+      <h3>Сопровождение</h3>
+      <ul class="small">
+        <li>Поменять устройство каталога — правка в одном классе: снаружи 0 обращений к его полям</li>
+        <li>Новый тип произведения: класс с <code>FIELDS</code>, строка в <code>KINDS</code>, <code>KIND_VIEWS</code>, <code>MAKERS</code> — меню не меняется</li>
+        <li>Другой формат файла — только <code>records.py</code></li>
+        <li>Главный цикл — 34 строки вместо 399</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>Тестирование</h3>
+      <ul class="small">
+        <li>Действия собраны в 5 модулях; <code>input</code> и <code>print</code> — только в <code>console.py</code></li>
+        <li>Тексты экрана — чистые функции <code>views</code>: проверяются без консоли</li>
+        <li>Регрессия: после каждого изменения сценарий по всем 18 пунктам меню давал побайтно тот же вывод (1366 строк); сохранённый файл и удаление дубликатов сверены с исходной версией</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>Переиспользование</h3>
+      <ul class="small">
+        <li><code>generic.py</code> не знает о фильмах — переносится в любой проект</li>
+        <li><code>console.py</code>, <code>history.py</code> — так же</li>
+        <li><code>queries</code> и <code>views</code> работают с любым списком произведений, не только с каталогом</li>
+        <li>Скрипт графа вызовов подходит для других пакетов: слои задаются отдельным файлом</li>
+      </ul>
+    </div>
+  </div>
+  <p class="small" style="margin-top:14px; color:var(--muted)">Цена: больше модулей (12 → 20 файлов) и мелких функций. Граф и метрики — <code>diagrams/</code>, каждое изменение — отдельный коммит в репозитории.</p>
+  <div class="num">12</div>
+</section>
+
+</div>
+<div class="hint">← → — слайды, F — полный экран</div>
+<script>
+  (function () {
+    var slides = Array.prototype.slice.call(document.querySelectorAll(".slide"));
+    var current = 0;
+    function fromHash() {
+      var n = parseInt(location.hash.slice(1), 10);
+      return n >= 1 && n <= slides.length ? n - 1 : 0;
+    }
+    function fit() {
+      var scale = Math.min(window.innerWidth / 1280, window.innerHeight / 720) * 0.96;
+      slides.forEach(function (s) { s.style.transform = "scale(" + scale + ")"; });
+    }
+    function show(i) {
+      current = Math.max(0, Math.min(slides.length - 1, i));
+      slides.forEach(function (s, k) { s.classList.toggle("active", k === current); });
+      if (location.hash !== "#" + (current + 1)) history.replaceState(null, "", "#" + (current + 1));
+    }
+    document.addEventListener("keydown", function (e) {
+      if (["ArrowRight", "PageDown", " ", "Enter"].indexOf(e.key) >= 0) { show(current + 1); e.preventDefault(); }
+      else if (["ArrowLeft", "PageUp", "Backspace"].indexOf(e.key) >= 0) { show(current - 1); e.preventDefault(); }
+      else if (e.key === "Home") show(0);
+      else if (e.key === "End") show(slides.length - 1);
+      else if (e.key === "f" || e.key === "F" || e.key === "а" || e.key === "А") {
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+        else document.exitFullscreen();
+      }
+    });
+    window.addEventListener("resize", fit);
+    window.addEventListener("hashchange", function () { show(fromHash()); });
+    fit();
+    show(fromHash());
+  })();
+</script>
+</body>
+</html>
