@@ -9,7 +9,6 @@
 import traceback
 from datetime import datetime
 
-from filmoteka.generic import item_at
 from filmoteka.queries import better_of, genre_matches
 from filmoteka.records import with_default_extension
 from filmoteka.rules import parse_genres
@@ -133,7 +132,7 @@ def choose_film(films, prompt):
             n = int(input(f"{prompt} (0 — выход): "))
             if n == 0:
                 return None
-            film = item_at(films.get_all(), n)
+            film = films.at(n)
             if film is not None:
                 return film
             raise NumberFilmException()
@@ -199,18 +198,18 @@ def filter_films(catalog):
     choice = input("> ").strip()
     if choice == "1":
         genre = input("Введите жанр: ").strip()
-        result = catalog.films.find_all(lambda item: genre_matches(item, genre))
+        result = catalog.films.filtered(lambda item: genre_matches(item, genre))
     elif choice == "2":
         kind = input("Введите тип: ").strip()
         types = {"film": Film, "cartoon": Cartoon, "serial": Serial}
         if kind.lower() not in types:
             error("Такого типа нет")
             return catalog
-        result = catalog.films.find_all(lambda item: type(item) is types[kind.lower()])
+        result = catalog.films.filtered(lambda item: type(item) is types[kind.lower()])
     else:
         error("Введён некорректный пункт")
         return catalog
-    if result.count == 0:
+    if len(result) == 0:
         print("Ничего не найдено")
     else:
         print_playlist(result)

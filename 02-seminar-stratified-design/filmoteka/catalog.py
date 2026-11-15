@@ -5,7 +5,14 @@
 """
 
 from filmoteka.generic import copy_with, find_first, replaced, same_text
-from filmoteka.queries import average_rating_by_genre, most_viewed, top_by_rating, total_views
+from filmoteka.queries import (
+    average_rating_by_genre,
+    most_viewed,
+    sorted_by_name,
+    sorted_by_rating,
+    top_by_rating,
+    total_views,
+)
 from filmoteka.exceptions import EmptyPlaylistException, ViewerException
 from filmoteka.playlist import Playlist
 from filmoteka.viewer import Viewer
@@ -28,7 +35,7 @@ class Catalog:
         return copy_with(self, films=films)
 
     def replace_film(self, old, new):
-        return self.with_films(self.films.replace(old, new))
+        return self.with_films(self.films.replaced(old, new))
 
     def replace_viewer(self, old, new):
         return copy_with(self, viewers=replaced(self.viewers, old, new))
@@ -60,13 +67,14 @@ class Catalog:
         return self.replace_viewer(viewer, viewer.with_in_playlist(film.title))
 
     def sorted_by_name(self):
-        return self.with_films(self.films.sort_by_name())
+        return self.with_films(self.films.sorted_with(sorted_by_name))
 
     def sorted_by_rating(self):
-        return self.with_films(self.films.sort_by_rating())
+        return self.with_films(self.films.sorted_with(sorted_by_rating))
 
     def without_duplicates(self):
-        return self.with_films(self.films.remove_duplicates())
+        # дубликаты — произведения, у которых совпадают все поля, то есть строка файла
+        return self.with_films(self.films.unique_by(str))
 
     # --- Вычисления над каталогом ---
 

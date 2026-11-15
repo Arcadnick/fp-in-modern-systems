@@ -56,11 +56,6 @@ def replaced(items, old, new):
     return tuple(new if item is old else item for item in items)
 
 
-def contains_same(items, item):
-    """Есть ли в списке именно этот объект (сравнение по ссылке, а не по ==)."""
-    return any(element is item for element in items)
-
-
 def unique_by(items, key):
     """Убрать элементы с повторяющимся key(элемент); порядок сохраняется."""
     seen = set()

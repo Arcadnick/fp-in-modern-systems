@@ -1,6 +1,6 @@
 """Запросы к спискам произведений: сортировка, подбор, сравнение и статистика."""
 
-from filmoteka.generic import average, group_by, sorted_by, unique_by
+from filmoteka.generic import average, group_by, sorted_by
 from filmoteka.rules import split_genres
 
 
@@ -18,11 +18,6 @@ def sorted_by_rating(items):
 
 def top_by_rating(items, count):
     return sorted_by(items, by_rating, reverse=True)[:count]
-
-
-def unique_by_line(items):
-    """Убрать произведения, у которых совпадают все поля; порядок сохраняется."""
-    return unique_by(items, str)
 
 
 def better_of(first, second):

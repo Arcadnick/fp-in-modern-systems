@@ -12,4 +12,4 @@ def load_playlist(filename):
 
 def save_playlist(playlist, filename):
     with open(filename, "w", encoding="utf-8") as file:
-        file.write("\n".join(playlist_to_lines(playlist.get_all())) + "\n")
+        file.write("\n".join(playlist_to_lines(playlist)) + "\n")
