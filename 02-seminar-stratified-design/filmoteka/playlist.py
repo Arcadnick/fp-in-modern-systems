@@ -3,7 +3,8 @@
 Плейлист неизменяемый: операции возвращают новый плейлист (copy-on-write).
 """
 
-from filmoteka.calculations import contains_same, replaced, sorted_by_name, sorted_by_rating, unique_by_line
+from filmoteka.generic import contains_same, replaced
+from filmoteka.queries import sorted_by_name, sorted_by_rating, unique_by_line
 from filmoteka.exceptions import EmptyPlaylistException
 
 

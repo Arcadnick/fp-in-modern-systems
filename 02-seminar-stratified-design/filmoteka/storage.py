@@ -1,6 +1,6 @@
 """Действия с файлами: чтение и запись плейлиста."""
 
-from filmoteka.calculations import playlist_to_lines
+from filmoteka.records import playlist_to_lines
 from filmoteka.constructors import parse_playlist
 
 

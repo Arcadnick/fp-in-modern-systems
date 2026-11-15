@@ -2,18 +2,16 @@
 
 from abc import ABC, abstractmethod
 
-from filmoteka.calculations import (
+from filmoteka.generic import copy_with, is_positive, one_of
+from filmoteka.rules import (
     MAX_RATING,
     MAX_YEAR,
     MIN_RATING,
     MIN_YEAR,
     can_raise_rating,
-    copy_with,
-    is_positive,
-    rating_from_votes,
     is_valid_rating,
     is_valid_year,
-    one_of,
+    rating_from_votes,
 )
 from filmoteka.exceptions import InvalidPropertyException, RatingException
 

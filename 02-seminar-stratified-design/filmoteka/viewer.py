@@ -5,7 +5,9 @@
 не делают его данные устаревшими.
 """
 
-from filmoteka.calculations import MAX_RATING, MIN_RATING, copy_with, is_valid_rating, recommendations
+from filmoteka.generic import copy_with
+from filmoteka.queries import recommendations
+from filmoteka.rules import MAX_RATING, MIN_RATING, is_valid_rating
 from filmoteka.exceptions import RatingException, ViewerException
 
 

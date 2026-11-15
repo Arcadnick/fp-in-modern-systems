@@ -9,7 +9,10 @@
 import traceback
 from datetime import datetime
 
-from filmoteka.calculations import better_of, genre_matches, item_at, parse_genres, with_default_extension
+from filmoteka.generic import item_at
+from filmoteka.queries import better_of, genre_matches
+from filmoteka.records import with_default_extension
+from filmoteka.rules import parse_genres
 from filmoteka.catalog import Catalog
 from filmoteka.cinematography import Cartoon, Film, Serial
 from filmoteka.colors import BLACK_ON_GREEN, BLUE, CYAN, GREEN, RED, RESET

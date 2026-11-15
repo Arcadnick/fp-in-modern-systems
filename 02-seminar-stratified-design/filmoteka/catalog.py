@@ -4,16 +4,8 @@
 а старый остаётся прежним — поэтому его можно хранить для отмены действий.
 """
 
-from filmoteka.calculations import (
-    average_rating_by_genre,
-    copy_with,
-    find_first,
-    most_viewed,
-    replaced,
-    same_text,
-    top_by_rating,
-    total_views,
-)
+from filmoteka.generic import copy_with, find_first, replaced, same_text
+from filmoteka.queries import average_rating_by_genre, most_viewed, top_by_rating, total_views
 from filmoteka.exceptions import EmptyPlaylistException, ViewerException
 from filmoteka.playlist import Playlist
 from filmoteka.viewer import Viewer
