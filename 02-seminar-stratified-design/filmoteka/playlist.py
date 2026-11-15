@@ -39,7 +39,3 @@ class Playlist:
     def unique_by(self, key):
         """Новый плейлист без повторов key(произведение)."""
         return Playlist(unique_by(self.cinema, key))
-
-    def numbered_lines(self):
-        """Плейлист построчно с номерами."""
-        return [f"{i}. {item}" for i, item in enumerate(self.cinema, start=1)]

@@ -19,11 +19,10 @@ from filmoteka.constructors import make_test_catalog
 from filmoteka.exceptions import (
     FilmotekaError,
     IdenticalMoviesException,
-    NoDataUploadedException,
     NumberFilmException,
     RatingException,
 )
-from filmoteka.storage import load_playlist, save_playlist
+from filmoteka.storage import load_catalog, save_catalog
 
 
 def success(message):
@@ -74,14 +73,9 @@ def print_menu():
     return int(input("> "))
 
 
-def check_data(catalog):
-    if catalog is None or len(catalog.films) == 0:
-        raise NoDataUploadedException()
-
-
-def print_playlist(playlist):
+def print_films(films):
     print("Список произведений:")
-    print_lines(playlist.numbered_lines())
+    print_lines(f"{i}. {film}" for i, film in enumerate(films, start=1))
 
 
 def get_data(catalog):
@@ -90,16 +84,16 @@ def get_data(catalog):
         error("Имя файла не введено")
         return catalog
     try:
-        playlist = load_playlist(filename)
+        new_catalog = load_catalog(filename)
     except FileNotFoundError:
         error(f"Файл {filename} не найден. Введите корректное имя файла или путь.")
         return catalog
     print(f"{BLACK_ON_GREEN}Данные успешно загружены{RESET}")
-    return Catalog(playlist)
+    return new_catalog
 
 
 def get_file(catalog):
-    check_data(catalog)
+    catalog.check_not_empty()
     filename = input("Введите имя файла, который хотите создать: ").strip()
     if filename == "":
         error("Имя файла не введено")
@@ -108,7 +102,7 @@ def get_file(catalog):
         filename = with_default_extension(filename)
         print("Имя было указано без расширения, поэтому файлу присвоено расширение .txt")
     try:
-        save_playlist(catalog.films, filename)
+        save_catalog(catalog, filename)
         success(f"Данные сохранены в {filename}")
     except OSError:
         error("Ошибка при выводе данных в файл.")
@@ -116,23 +110,23 @@ def get_file(catalog):
 
 
 def writer(catalog):
-    check_data(catalog)
-    for film in catalog.films:
+    catalog.check_not_empty()
+    for film in catalog.all_films():
         print(f"{BLUE}\nИнформация о произведении:{RESET}")
         print_lines(film.details())
         print(film.describe())
     return catalog
 
 
-def choose_film(films, prompt):
+def choose_film(catalog, prompt):
     """Спросить номер произведения. 0 — отказ, вернёт None."""
-    print_playlist(films)
+    print_films(catalog.all_films())
     while True:
         try:
             n = int(input(f"{prompt} (0 — выход): "))
             if n == 0:
                 return None
-            film = films.at(n)
+            film = catalog.film_at(n)
             if film is not None:
                 return film
             raise NumberFilmException()
@@ -141,9 +135,9 @@ def choose_film(films, prompt):
 
 
 def raise_up(catalog):
-    check_data(catalog)
+    catalog.check_not_empty()
     while True:
-        film = choose_film(catalog.films, "Введите номер фильма, рейтинг которого хотите поднять")
+        film = choose_film(catalog, "Введите номер фильма, рейтинг которого хотите поднять")
         if film is None:
             return catalog
         try:
@@ -156,11 +150,11 @@ def raise_up(catalog):
 
 
 def compare(catalog):
-    check_data(catalog)
-    first = choose_film(catalog.films, "Введите номер первого фильма для сравнения")
+    catalog.check_not_empty()
+    first = choose_film(catalog, "Введите номер первого фильма для сравнения")
     if first is None:
         return catalog
-    second = choose_film(catalog.films, "Введите номер второго фильма для сравнения")
+    second = choose_film(catalog, "Введите номер второго фильма для сравнения")
     if second is None:
         return catalog
     if first is second:
@@ -177,9 +171,9 @@ def compare(catalog):
 
 def sort_films(catalog, sort):
     """Общая часть пунктов 7–8: отсортировать каталог функцией sort и показать."""
-    check_data(catalog)
+    catalog.check_not_empty()
     new_catalog = sort(catalog)
-    print_playlist(new_catalog.films)
+    print_films(new_catalog.all_films())
     return new_catalog
 
 
@@ -192,39 +186,39 @@ def sort_by_rating(catalog):
 
 
 def filter_films(catalog):
-    check_data(catalog)
+    catalog.check_not_empty()
     print("1. По жанру")
     print("2. По типу (Film, Cartoon, Serial)")
     choice = input("> ").strip()
     if choice == "1":
         genre = input("Введите жанр: ").strip()
-        result = catalog.films.filtered(lambda item: genre_matches(item, genre))
+        result = catalog.films_where(lambda item: genre_matches(item, genre))
     elif choice == "2":
         kind = input("Введите тип: ").strip()
         types = {"film": Film, "cartoon": Cartoon, "serial": Serial}
         if kind.lower() not in types:
             error("Такого типа нет")
             return catalog
-        result = catalog.films.filtered(lambda item: type(item) is types[kind.lower()])
+        result = catalog.films_where(lambda item: type(item) is types[kind.lower()])
     else:
         error("Введён некорректный пункт")
         return catalog
     if len(result) == 0:
         print("Ничего не найдено")
     else:
-        print_playlist(result)
+        print_films(result)
     return catalog
 
 
 def remove_duplicates(catalog):
-    check_data(catalog)
+    catalog.check_not_empty()
     new_catalog = catalog.without_duplicates()
-    print(f"Удалено дубликатов: {len(catalog.films) - len(new_catalog.films)}")
+    print(f"Удалено дубликатов: {catalog.film_count() - new_catalog.film_count()}")
     return new_catalog
 
 
 def register_viewer(catalog):
-    check_data(catalog)
+    catalog.check_not_empty()
     name = input("Введите имя зрителя: ").strip()
     if name == "":
         error("Имя не введено")
@@ -236,10 +230,10 @@ def register_viewer(catalog):
 
 
 def choose_viewer(catalog):
-    if len(catalog.viewers) == 0:
+    if not catalog.has_viewers():
         error("Зрителей пока нет, сначала зарегистрируйте зрителя (пункт 11)")
         return None
-    print("Зрители: " + ", ".join(viewer.name for viewer in catalog.viewers))
+    print("Зрители: " + ", ".join(catalog.viewer_names()))
     name = input("Введите имя зрителя: ").strip()
     viewer = catalog.find_viewer(name)
     if viewer is None:
@@ -249,7 +243,7 @@ def choose_viewer(catalog):
 
 def with_viewer(catalog, action):
     """Общая часть пунктов 12–16: выбрать зрителя и вернуть action(viewer) -> каталог."""
-    check_data(catalog)
+    catalog.check_not_empty()
     viewer = choose_viewer(catalog)
     if viewer is None:
         return catalog
@@ -259,7 +253,7 @@ def with_viewer(catalog, action):
 def with_viewer_and_film(catalog, prompt, action):
     """Общая часть пунктов 12–14: выбрать зрителя и фильм и вернуть action(viewer, film) -> каталог."""
     def choose_and_act(viewer):
-        film = choose_film(catalog.films, prompt)
+        film = choose_film(catalog, prompt)
         if film is None:
             return catalog
         return action(viewer, film)
@@ -302,7 +296,7 @@ def viewer_profile(catalog):
 def recommend(catalog):
     def show(viewer):
         header(f"Рекомендации для {viewer.name}:")
-        films = viewer.recommend(catalog.films)
+        films = catalog.recommendations_for(viewer)
         if len(films) == 0:
             print("  Подходящих произведений не нашлось")
         for film in films:
@@ -312,7 +306,7 @@ def recommend(catalog):
 
 
 def statistics(catalog):
-    check_data(catalog)
+    catalog.check_not_empty()
     stats = catalog.statistics(top=3)
     header("Средний рейтинг по жанрам:")
     for genre, rating in stats["by_genre"].items():
@@ -369,7 +363,7 @@ ACTIONS = {
 
 def main():
     the_first_word()
-    catalog = None
+    catalog = Catalog()
     history = []  # прошлые версии каталога для отмены
     while True:
         try:

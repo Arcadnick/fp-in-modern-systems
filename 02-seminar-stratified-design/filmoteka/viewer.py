@@ -6,7 +6,6 @@
 """
 
 from filmoteka.generic import copy_with
-from filmoteka.queries import recommendations
 from filmoteka.rules import MAX_RATING, MIN_RATING, is_valid_rating
 from filmoteka.exceptions import RatingException, ViewerException
 
@@ -41,10 +40,6 @@ class Viewer:
         if title in self.playlist:
             raise ViewerException(f"«{title}» уже есть в плейлисте {self.name}")
         return copy_with(self, playlist=self.playlist + (title,))
-
-    def recommend(self, catalog_films, count=3):
-        """Непросмотренные произведения любимых жанров, лучшие по рейтингу."""
-        return recommendations(catalog_films, self.favorite_genres, self.history, count)
 
     def profile_lines(self):
         lines = [

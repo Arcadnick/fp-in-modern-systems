@@ -2,18 +2,22 @@
 
 Каталог неизменяемый: каждая операция возвращает новый каталог (copy-on-write),
 а старый остаётся прежним — поэтому его можно хранить для отмены действий.
+
+Каталог — барьер абстракций: код выше него не знает, что произведения лежат
+в Playlist, а зрители — в кортеже, и работает только через методы каталога.
 """
 
 from filmoteka.generic import copy_with, find_first, replaced, same_text
 from filmoteka.queries import (
     average_rating_by_genre,
     most_viewed,
+    recommendations,
     sorted_by_name,
     sorted_by_rating,
     top_by_rating,
     total_views,
 )
-from filmoteka.exceptions import EmptyPlaylistException, ViewerException
+from filmoteka.exceptions import EmptyPlaylistException, NoDataUploadedException, ViewerException
 from filmoteka.playlist import Playlist
 from filmoteka.viewer import Viewer
 
@@ -23,11 +27,36 @@ class Catalog:
         self.films = films if films is not None else Playlist()
         self.viewers = tuple(viewers)
 
+    # --- Чтение ---
+
+    def is_empty(self):
+        return len(self.films) == 0
+
+    def check_not_empty(self):
+        if self.is_empty():
+            raise NoDataUploadedException()
+
+    def film_count(self):
+        return len(self.films)
+
+    def all_films(self):
+        return tuple(self.films)
+
+    def film_at(self, number):
+        """Произведение по номеру в списке (с 1) или None."""
+        return self.films.at(number)
+
+    def films_where(self, predicate):
+        return tuple(self.films.filtered(predicate))
+
+    def has_viewers(self):
+        return len(self.viewers) > 0
+
+    def viewer_names(self):
+        return tuple(viewer.name for viewer in self.viewers)
+
     def find_viewer(self, name):
         return find_first(self.viewers, lambda viewer: same_text(viewer.name, name))
-
-    def find_film(self, title):
-        return find_first(self.films, lambda film: same_text(film.title, title))
 
     # --- Копии с изменениями ---
 
@@ -77,6 +106,10 @@ class Catalog:
         return self.with_films(self.films.unique_by(str))
 
     # --- Вычисления над каталогом ---
+
+    def recommendations_for(self, viewer, count=3):
+        """Непросмотренные зрителем произведения его любимых жанров, лучшие по рейтингу."""
+        return recommendations(self.films, viewer.favorite_genres, viewer.history, count)
 
     def statistics(self, top=3):
         """Средний рейтинг по жанрам, топ по рейтингу и просмотры."""
