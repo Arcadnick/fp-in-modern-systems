@@ -10,8 +10,9 @@
 | — из них действие | 33 |
 | — из них вычисление | 110 |
 | Стрелок | 486 |
-| Самая длинная стрелка, слоёв | 10 |
-| Самая длинная стрелка, подуровней | 28 |
+| Самая длинная стрелка между функциями, слоёв | 7 |
+| Стрелок между функциями через 3 слоя и больше | 49 |
+| Самая длинная стрелка вообще, подуровней | 28 |
 | Функций, напрямую использующих конструкции языка | 69 |
 | Функций верхних слоёв, напрямую зависящих от данных и языка | 21 |
 | Обращений к внутренностям каталога и плейлиста извне | 22 |
@@ -40,21 +41,57 @@
 
 **Язык Python** (подуровень 0, узлов: 36): `any()`, `copy.copy`, `datetime.now`, `dict.get`, `dict.items`, `dict.setdefault`, `enumerate()`, `file.read`, `file.write`, `for`, `input()`, `int()`, `isinstance()`, `iter()`, `len()`, `list.append`, `list.pop`, `open()`, `print()`, `round()`, `set()`, `set.add`, `setattr()`, `sorted()`, `str()`, `str.join`, `str.lower`, `str.split`, `str.splitlines`, `str.strip`, `sum()`, `traceback.format_exc`, `tuple()`, `type()`, `индекс [ ]`, `срез [:]`
 
-## Самые длинные стрелки
+## Стрелки между функциями через 3 слоя и больше
 
-- `main.main` → `len()`
-- `main.main` → `list.append`
-- `main.main` → `list.pop`
-- `main.main` → `print()`
-- `main.main` → `индекс [ ]`
-
-## Самые длинные стрелки в слоях
-
-- `main.main` (Цикл меню) → `len()` (Язык Python)
-- `main.main` (Цикл меню) → `list.append` (Язык Python)
-- `main.main` (Цикл меню) → `list.pop` (Язык Python)
-- `main.main` (Цикл меню) → `print()` (Язык Python)
-- `main.main` (Цикл меню) → `индекс [ ]` (Язык Python)
+- `main.writer` (Команды меню и их общие части) → `Cinematography.describe` (Представление произведений), слоёв: 7
+- `main.writer` (Команды меню и их общие части) → `Cinematography.details` (Представление произведений), слоёв: 7
+- `main.choose_film` (Команды меню и их общие части) → `calculations.item_at` (Вычисления (calculations.py)), слоёв: 6
+- `main.compare` (Команды меню и их общие части) → `calculations.better_of` (Вычисления (calculations.py)), слоёв: 6
+- `main.filter_films` (Команды меню и их общие части) → `calculations.genre_matches` (Вычисления (calculations.py)), слоёв: 6
+- `main.get_file` (Команды меню и их общие части) → `calculations.with_default_extension` (Вычисления (calculations.py)), слоёв: 6
+- `main.register_viewer` (Команды меню и их общие части) → `calculations.parse_genres` (Вычисления (calculations.py)), слоёв: 6
+- `storage.save_playlist` (Консоль и файлы) → `calculations.playlist_to_lines` (Вычисления (calculations.py)), слоёв: 5
+- `main.check_data` (Команды меню и их общие части) → `Playlist.__len__` (Зритель и плейлист), слоёв: 4
+- `main.choose_film` (Команды меню и их общие части) → `Playlist.get_all` (Зритель и плейлист), слоёв: 4
+- `main.filter_films` (Команды меню и их общие части) → `Playlist.find_all` (Зритель и плейлист), слоёв: 4
+- `main.recommend` (Команды меню и их общие части) → `Playlist.__iter__` (Зритель и плейлист), слоёв: 4
+- `main.recommend` (Команды меню и их общие части) → `Viewer.recommend` (Зритель и плейлист), слоёв: 4
+- `main.remove_duplicates` (Команды меню и их общие части) → `Playlist.__len__` (Зритель и плейлист), слоёв: 4
+- `main.viewer_profile` (Команды меню и их общие части) → `Viewer.profile_lines` (Зритель и плейлист), слоёв: 4
+- `main.writer` (Команды меню и их общие части) → `Playlist.__iter__` (Зритель и плейлист), слоёв: 4
+- `Catalog.find_film` (Каталог) → `calculations.find_first` (Вычисления (calculations.py)), слоёв: 3
+- `Catalog.find_film` (Каталог) → `calculations.same_text` (Вычисления (calculations.py)), слоёв: 3
+- `Catalog.find_viewer` (Каталог) → `calculations.find_first` (Вычисления (calculations.py)), слоёв: 3
+- `Catalog.find_viewer` (Каталог) → `calculations.same_text` (Вычисления (calculations.py)), слоёв: 3
+- `Catalog.replace_viewer` (Каталог) → `calculations.copy_with` (Вычисления (calculations.py)), слоёв: 3
+- `Catalog.replace_viewer` (Каталог) → `calculations.replaced` (Вычисления (calculations.py)), слоёв: 3
+- `Catalog.statistics` (Каталог) → `calculations.average_rating_by_genre` (Вычисления (calculations.py)), слоёв: 3
+- `Catalog.statistics` (Каталог) → `calculations.most_viewed` (Вычисления (calculations.py)), слоёв: 3
+- `Catalog.statistics` (Каталог) → `calculations.top_by_rating` (Вычисления (calculations.py)), слоёв: 3
+- `Catalog.statistics` (Каталог) → `calculations.total_views` (Вычисления (calculations.py)), слоёв: 3
+- `Catalog.with_films` (Каталог) → `calculations.copy_with` (Вычисления (calculations.py)), слоёв: 3
+- `Catalog.with_viewer` (Каталог) → `calculations.copy_with` (Вычисления (calculations.py)), слоёв: 3
+- `Playlist.numbered_lines` (Зритель и плейлист) → `Cinematography.__str__` (Представление произведений), слоёв: 3
+- `Playlist.to_lines` (Зритель и плейлист) → `Cinematography.__str__` (Представление произведений), слоёв: 3
+- `constructors.make_cartoon` (Конструкторы) → `Cartoon.__init__` (Операции над произведениями), слоёв: 3
+- `constructors.make_film` (Конструкторы) → `Film.__init__` (Операции над произведениями), слоёв: 3
+- `constructors.make_serial` (Конструкторы) → `Serial.__init__` (Операции над произведениями), слоёв: 3
+- `constructors.make_test_films` (Конструкторы) → `Cartoon.__init__` (Операции над произведениями), слоёв: 3
+- `constructors.make_test_films` (Конструкторы) → `Film.__init__` (Операции над произведениями), слоёв: 3
+- `constructors.make_test_films` (Конструкторы) → `Serial.__init__` (Операции над произведениями), слоёв: 3
+- `main.add_to_viewer_playlist` (Команды меню и их общие части) → `Catalog.add_to_playlist` (Каталог), слоёв: 3
+- `main.choose_viewer` (Команды меню и их общие части) → `Catalog.find_viewer` (Каталог), слоёв: 3
+- `main.get_data` (Команды меню и их общие части) → `Catalog.__init__` (Каталог), слоёв: 3
+- `main.print_playlist` (Консоль и файлы) → `Playlist.numbered_lines` (Зритель и плейлист), слоёв: 3
+- `main.raise_up` (Команды меню и их общие части) → `Catalog.raise_rating` (Каталог), слоёв: 3
+- `main.rate_film` (Команды меню и их общие части) → `Catalog.rate` (Каталог), слоёв: 3
+- `main.register_viewer` (Команды меню и их общие части) → `Catalog.with_viewer` (Каталог), слоёв: 3
+- `main.remove_duplicates` (Команды меню и их общие части) → `Catalog.without_duplicates` (Каталог), слоёв: 3
+- `main.sort_by_name` (Команды меню и их общие части) → `Catalog.sorted_by_name` (Каталог), слоёв: 3
+- `main.sort_by_rating` (Команды меню и их общие части) → `Catalog.sorted_by_rating` (Каталог), слоёв: 3
+- `main.statistics` (Команды меню и их общие части) → `Catalog.statistics` (Каталог), слоёв: 3
+- `main.watch_film` (Команды меню и их общие части) → `Catalog.watch` (Каталог), слоёв: 3
+- `storage.save_playlist` (Консоль и файлы) → `Playlist.get_all` (Зритель и плейлист), слоёв: 3
 
 ## Обращения к внутренностям каталога и плейлиста извне
 

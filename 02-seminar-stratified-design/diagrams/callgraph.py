@@ -75,6 +75,7 @@ class Project:
         self.functions = {}  # (модуль, имя) -> узел
         self.classes = {}    # имя класса -> ClassInfo
         self.constants = {}  # (модуль, имя) -> узел выражения (для таблиц функций)
+        self.ambiguous = set()  # поля с одинаковым именем у разных классов
         for module, tree in self.trees.items():
             self.collect(module, tree)
         self.mark_exceptions()
@@ -148,14 +149,17 @@ class Project:
                   if not info.is_exception and (attribute in info.fields or plain in info.properties
                                                 or attribute in info.properties)]
         roots = self.root_of(owners)
+        if len(roots) > 1:
+            self.ambiguous.add(attribute)
         return roots[0].name if len(roots) == 1 else None
 
 
 class Collector(ast.NodeVisitor):
     """Стрелки из одной функции или метода."""
 
-    def __init__(self, project, module, imports, current, class_name=None):
+    def __init__(self, project, module, imports, current, class_name=None, local_names=()):
         self.project = project
+        self.local_names = set(local_names)
         self.module = module
         self.imports = imports  # имя -> (модуль проекта, имя) или ("<stdlib>", модуль)
         self.current = current
@@ -189,7 +193,7 @@ class Collector(ast.NodeVisitor):
             if not called:
                 return f"{name}: поля"
             init = self.project.find_method(name, "__init__")
-            return init or f"{name}.__init__"
+            return init or f"{name}: поля"  # NamedTuple: вызов класса создаёт данные
         return None
 
     def constant_value(self, name):
@@ -200,7 +204,7 @@ class Collector(ast.NodeVisitor):
         return None
 
     def visit_Name(self, node):
-        if isinstance(node.ctx, ast.Load):
+        if isinstance(node.ctx, ast.Load) and node.id not in self.local_names:
             target = self.resolve_name(node.id)
             if target is not None:
                 self.add(target)
@@ -246,6 +250,12 @@ class Collector(ast.NodeVisitor):
                 if target:
                     self.add(target)
                     return
+            # модуль проекта: console.success(...)
+            if obj.id in self.imports and self.imports[obj.id][0] == "<module>":
+                module = self.imports[obj.id][1]
+                if (module, method) in self.project.functions:
+                    self.add(f"{module}.{method}")
+                    return
             # модуль стандартной библиотеки
             if obj.id in self.imports and self.imports[obj.id][0] == "<stdlib>":
                 self.add(STDLIB.get((self.imports[obj.id][1], method), f"{obj.id}.{method}"))
@@ -259,7 +269,11 @@ class Collector(ast.NodeVisitor):
         self.visit(obj)
         candidates = self.project.classes_with(method, "methods")
         if candidates:
-            for root in self.project.root_of(candidates):
+            roots = self.project.root_of(candidates)
+            if len(roots) > 1:
+                self.warnings.append(f"{self.current}: метод .{method}() есть у нескольких классов, "
+                                     "стрелки проведены ко всем")
+            for root in roots:
                 self.add(f"{root.name}.{method}")
             return
         if method in BUILTIN_METHODS:
@@ -271,6 +285,14 @@ class Collector(ast.NodeVisitor):
 
     def visit_Attribute(self, node):
         obj, attribute = node.value, node.attr
+        # ссылка на функцию модуля без вызова или константа модуля: views.TITLE
+        if isinstance(obj, ast.Name) and self.imports.get(obj.id, ("",))[0] == "<module>":
+            module = self.imports[obj.id][1]
+            if (module, attribute) in self.project.functions:
+                self.add(f"{module}.{attribute}")
+            elif (module, attribute) in self.project.constants:
+                self.visit(self.project.constants[(module, attribute)])
+            return
         if isinstance(obj, ast.Name) and obj.id in self.project.classes:
             target = self.project.find_method(obj.id, attribute)
             if target:
@@ -314,7 +336,9 @@ def imports_of(tree):
         if isinstance(node, ast.ImportFrom) and node.module:
             module = node.module.split(".")[-1]
             for alias in node.names:
-                if node.module.startswith("filmoteka"):
+                if node.module == "filmoteka":
+                    result[alias.asname or alias.name] = ("<module>", alias.name)
+                elif node.module.startswith("filmoteka"):
                     result[alias.asname or alias.name] = (module, alias.name)
                 else:
                     result[alias.asname or alias.name] = ("<stdlib>", alias.name)
@@ -322,6 +346,21 @@ def imports_of(tree):
             for alias in node.names:
                 result[alias.asname or alias.name] = ("<stdlib>", alias.name)
     return result
+
+
+def local_names_of(function):
+    """Параметры и локальные переменные функции (вместе с вложенными функциями и лямбдами)."""
+    names = set()
+    for node in ast.walk(function):
+        if isinstance(node, ast.arg):
+            names.add(node.arg)
+        elif isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
+            names.add(node.id)
+        elif isinstance(node, ast.ExceptHandler) and node.name:
+            names.add(node.name)
+        elif isinstance(node, ast.FunctionDef) and node is not function:
+            names.add(node.name)
+    return names
 
 
 def build_graph(package_dir, extra_edges=()):
@@ -335,7 +374,7 @@ def build_graph(package_dir, extra_edges=()):
 
     def walk(module, imports, name, body_node, class_name=None, kind="function"):
         nodes[name] = {"kind": kind, "module": module}
-        collector = Collector(project, module, imports, name, class_name)
+        collector = Collector(project, module, imports, name, class_name, local_names_of(body_node))
         for statement in body_node.body:
             collector.visit(statement)
         for decorator_arg in body_node.args.defaults:
@@ -367,6 +406,8 @@ def build_graph(package_dir, extra_edges=()):
         if source not in nodes or target not in nodes:
             warnings.append(f"неявная стрелка с неизвестным узлом: {source} -> {target}")
         edges.add((source, target))
+    for attribute in sorted(project.ambiguous):
+        warnings.append(f"поле .{attribute} есть у нескольких классов, стрелка к данным не построена")
     # узлы, на которые есть стрелки, но которых нет среди функций: язык
     for _, target in list(edges):
         if target not in nodes:
@@ -452,7 +493,9 @@ def metrics(nodes, edges, height, band, titles, top_layers, barrier):
     functions = [n for n, info in nodes.items() if info["kind"] == "function"]
     lengths = {(s, t): height[s] - height[t] for s, t in edges}
     longest = max(lengths.values())
-    longest_in_layers = max(band[t] - band[s] for s, t in edges)
+    # стрелки к данным и языку есть у каждой ветки графа, поэтому длину считаем между функциями
+    between = [(s, t) for s, t in edges if nodes[t]["kind"] == "function"]
+    longest_in_layers = max(band[t] - band[s] for s, t in between)
     owners, inside = barrier
     breaches = sorted({(s, t) for s, t in edges
                        if any(fnmatchcase(t, p) for p in inside)
@@ -473,7 +516,8 @@ def metrics(nodes, edges, height, band, titles, top_layers, barrier):
         "longest": longest,
         "longest_edges": sorted(e for e, length in lengths.items() if length == longest),
         "longest_in_layers": longest_in_layers,
-        "longest_layer_edges": sorted(e for e in edges if band[e[1]] - band[e[0]] == longest_in_layers),
+        "longest_layer_edges": sorted(e for e in between if band[e[1]] - band[e[0]] == longest_in_layers),
+        "long_between": sorted(e for e in between if band[e[1]] - band[e[0]] >= 3),
         "breaches": breaches,
         "lengths": lengths,
         "to_language": to_language,
@@ -574,8 +618,9 @@ def to_markdown(m, nodes, height, band, titles, title):
     for category in ("действие", "вычисление"):
         out.append(f"| — из них {category} | {m['by_category'].get(category, 0)} |")
     out.append(f"| Стрелок | {m['edges']} |")
-    out.append(f"| Самая длинная стрелка, слоёв | {m['longest_in_layers']} |")
-    out.append(f"| Самая длинная стрелка, подуровней | {m['longest']} |")
+    out.append(f"| Самая длинная стрелка между функциями, слоёв | {m['longest_in_layers']} |")
+    out.append(f"| Стрелок между функциями через 3 слоя и больше | {len(m['long_between'])} |")
+    out.append(f"| Самая длинная стрелка вообще, подуровней | {m['longest']} |")
     out.append(f"| Функций, напрямую использующих конструкции языка | {len(m['to_language'])} |")
     out.append(f"| Функций верхних слоёв, напрямую зависящих от данных и языка | {len(m['top_to_low'])} |")
     out.append(f"| Обращений к внутренностям каталога и плейлиста извне | {len(m['breaches'])} |")
@@ -591,25 +636,25 @@ def to_markdown(m, nodes, height, band, titles, title):
         out.append(f"**{layer_title}** ({span}, узлов: {len(members)}): "
                    + ", ".join(f"`{x}`" for x in members))
         out.append("")
-    out.append("## Самые длинные стрелки")
+    out.append("## Стрелки между функциями через 3 слоя и больше")
     out.append("")
-    for source, target in m["longest_edges"]:
-        out.append(f"- `{source}` → `{target}`")
-    out.append("")
-    out.append("## Самые длинные стрелки в слоях")
-    out.append("")
-    for source, target in m["longest_layer_edges"]:
-        out.append(f"- `{source}` ({titles[band[source]]}) → `{target}` ({titles[band[target]]})")
+    for source, target in sorted(m["long_between"], key=lambda e: (band[e[0]] - band[e[1]], e)):
+        out.append(f"- `{source}` ({titles[band[source]]}) → `{target}` ({titles[band[target]]}), "
+                   f"слоёв: {band[target] - band[source]}")
     out.append("")
     out.append("## Обращения к внутренностям каталога и плейлиста извне")
     out.append("")
     for source, target in m["breaches"]:
         out.append(f"- `{source}` → `{target}`")
+    if not m["breaches"]:
+        out.append("Нет.")
     out.append("")
     out.append("## Функции верхних слоёв, напрямую зависящие от данных и языка")
     out.append("")
     for name in m["top_to_low"]:
         out.append(f"- `{name}`")
+    if not m["top_to_low"]:
+        out.append("Нет.")
     out.append("")
     return "\n".join(out)
 
@@ -633,7 +678,8 @@ def main(package_dir, layers_file, out):
     Path(out + ".dot").write_text(to_dot(nodes, edges, height, band, titles, config["TITLE"], config["TOP_LAYERS"]), encoding="utf-8")
     Path(out + ".md").write_text(to_markdown(m, nodes, height, band, titles, config["TITLE"]), encoding="utf-8")
     print(f"узлов {len(nodes)}, функций {m['functions']}, стрелок {m['edges']}, слоёв {m['bands']}, "
-          f"подуровней {m['layers']}, самая длинная {m['longest_in_layers']} сл./{m['longest']} подур., "
+          f"подуровней {m['layers']}, самая длинная между функциями {m['longest_in_layers']} сл., "
+          f"через 3+ слоя {len(m['long_between'])}, "
           f"барьер {len(m['breaches'])}, "
           f"к языку {len(m['to_language'])}, верх->данные/язык {len(m['top_to_low'])}, вверх {len(upward)}")
 
