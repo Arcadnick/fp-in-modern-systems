@@ -3,17 +3,18 @@
 import traceback
 from datetime import datetime
 
-from filmoteka.records import catalog_lines, parse_catalog
+from filmoteka.catalog import Catalog
+from filmoteka.records import films_to_lines, parse_films
 
 
 def load_catalog(filename):
     with open(filename, encoding="utf-8") as file:
-        return parse_catalog(file.read().splitlines())
+        return Catalog(parse_films(file.read().splitlines()))
 
 
 def save_catalog(catalog, filename):
     with open(filename, "w", encoding="utf-8") as file:
-        file.write("\n".join(catalog_lines(catalog)) + "\n")
+        file.write("\n".join(films_to_lines(catalog.all_films())) + "\n")
 
 
 def write_error_log(err):

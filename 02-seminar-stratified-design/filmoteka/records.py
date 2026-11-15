@@ -1,9 +1,9 @@
-"""Формат файла с каталогом: первая строка — количество, затем по произведению в строке.
+"""Формат файла с произведениями: первая строка — количество, затем по произведению в строке.
 
 Строка произведения: «Тип|поле|поле|...», поля — в порядке FIELDS класса.
+О каталоге модуль не знает: он переводит строки в произведения и обратно.
 """
 
-from filmoteka.catalog import Catalog
 from filmoteka.cinematography import Cartoon, Film, Serial
 from filmoteka.exceptions import InvalidPropertyException, ReadingFromFileException
 
@@ -13,9 +13,8 @@ def to_record(film):
     return "|".join([type(film).__name__] + [str(getattr(film, name)) for name in film.FIELDS])
 
 
-def catalog_lines(catalog):
-    """Каталог -> строки файла."""
-    films = catalog.all_films()
+def films_to_lines(films):
+    """Произведения -> строки файла."""
     return [str(len(films))] + [to_record(film) for film in films]
 
 
@@ -49,11 +48,11 @@ def parse_cinematography(line):
     return maker(parts)
 
 
-def parse_catalog(lines):
-    """Строки файла -> каталог без зрителей. Первая строка — количество записей."""
+def parse_films(lines):
+    """Строки файла -> список произведений. Первая строка — количество записей."""
     try:
         n = int(lines[0])
-        return Catalog([parse_cinematography(line) for line in lines[1:n + 1]])
+        return [parse_cinematography(line) for line in lines[1:n + 1]]
     except (ValueError, IndexError, InvalidPropertyException) as e:
         raise ReadingFromFileException(f"Некорректные данные: {e}")
 
