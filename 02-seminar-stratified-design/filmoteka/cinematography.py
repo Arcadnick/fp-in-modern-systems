@@ -28,8 +28,10 @@ class Cinematography:
     """Произведение кинематографа.
 
     После создания не меняется: операции возвращают изменённую копию (copy-on-write).
-    Сортировка (<) — по названию, при одинаковом названии — по году выхода.
+    FIELDS — поля, которые описывают произведение (без просмотров и оценок), по порядку.
     """
+
+    FIELDS = ("title", "director", "genre", "release", "rating")
 
     def __init__(self, title, director, genre="unknown", release=1895, rating=1):
         self.title = title
@@ -57,22 +59,6 @@ class Cinematography:
         self._rating = checked(value, is_valid_rating,
                                f"Неверный рейтинг ({value}), допустимо {MIN_RATING}..{MAX_RATING}")
 
-    def __lt__(self, other):
-        if self.title == other.title:
-            return self.release < other.release
-        return self.title < other.title
-
-    def __eq__(self, other):
-        # Как в оригинале: два произведения «равны», если у них одинаковый рейтинг
-        if isinstance(other, Cinematography):
-            return self.rating == other.rating
-        return False
-
-    __hash__ = object.__hash__
-
-    def __str__(self):
-        return f"Cinematography|{self.title}|{self.director}|{self.genre}|{self.release}|{self.rating}"
-
     def with_raised_rating(self):
         """Копия с рейтингом на 1 больше."""
         if not can_raise_rating(self.rating):
@@ -90,6 +76,8 @@ class Cinematography:
 
 
 class Film(Cinematography):
+    FIELDS = Cinematography.FIELDS + ("budget", "effect")
+
     def __init__(self, title, director, genre, release, rating, budget, effect):
         super().__init__(title, director, genre, release, rating)
         self.budget = budget
@@ -111,12 +99,10 @@ class Film(Cinematography):
     def effect(self, value):
         self._effect = checked(value, one_of(EFFECTS), f"Неверное значение ({value}), возможные — Yes/No")
 
-    def __str__(self):
-        return (f"Film|{self.title}|{self.director}|{self.genre}|{self.release}|{self.rating}"
-                f"|{self.budget}|{self.effect}")
-
 
 class Cartoon(Cinematography):
+    FIELDS = Cinematography.FIELDS + ("character", "kind")
+
     def __init__(self, title, director, genre, release, rating, character, kind):
         super().__init__(title, director, genre, release, rating)
         self.character = character
@@ -131,12 +117,10 @@ class Cartoon(Cinematography):
         self._kind = checked(value, one_of(CARTOON_KINDS),
                              f"Неверное значение ({value}), возможные варианты — Full, Short, Serial")
 
-    def __str__(self):
-        return (f"Cartoon|{self.title}|{self.director}|{self.genre}|{self.release}|{self.rating}"
-                f"|{self.character}|{self.kind}")
-
 
 class Serial(Cartoon):
+    FIELDS = Cartoon.FIELDS + ("series", "seasons")
+
     def __init__(self, title, director, genre, release, rating, character, kind, series, seasons):
         super().__init__(title, director, genre, release, rating, character, kind)
         self.series = series
@@ -158,8 +142,3 @@ class Serial(Cartoon):
     def seasons(self, value):
         self._seasons = checked(value, is_positive,
                                 f"Неверное количество сезонов ({value}), оно должно быть больше 0")
-
-    def __str__(self):
-        return (f"Serial|{self.title}|{self.director}|{self.genre}|{self.release}|{self.rating}"
-                f"|{self.character}|{self.kind}|{self.series}|{self.seasons}")
-

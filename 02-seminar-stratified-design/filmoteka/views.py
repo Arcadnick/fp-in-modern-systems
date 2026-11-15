@@ -6,6 +6,7 @@
 """
 
 from filmoteka.cinematography import Cartoon, Film, Serial
+from filmoteka.records import to_record
 
 
 # --- Произведения ---
@@ -49,7 +50,7 @@ def film_details(film):
 
 def numbered(films):
     """Список произведений с номерами с 1."""
-    return ["Список произведений:"] + [f"{i}. {film}" for i, film in enumerate(films, start=1)]
+    return ["Список произведений:"] + [f"{i}. {to_record(film)}" for i, film in enumerate(films, start=1)]
 
 
 def comparison_lines(result):

@@ -30,8 +30,18 @@ def by_rating(item):
     return item.rating
 
 
+def by_title_and_year(item):
+    """Порядок «по названию»: при одинаковом названии — по году выхода."""
+    return item.title, item.release
+
+
+def identity(film):
+    """Ключ для поиска дубликатов: тип и все поля из FIELDS."""
+    return (type(film).__name__,) + tuple(getattr(film, name) for name in film.FIELDS)
+
+
 def sorted_by_name(items):
-    return sorted(items)
+    return sorted_by(items, by_title_and_year)
 
 
 def sorted_by_rating(items):

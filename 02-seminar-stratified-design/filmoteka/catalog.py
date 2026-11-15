@@ -10,6 +10,7 @@
 from filmoteka.generic import copy_with, find_first, replaced, same_text
 from filmoteka.queries import (
     genre_matches,
+    identity,
     is_kind,
     is_known_kind,
     recommendations,
@@ -112,8 +113,7 @@ class Catalog:
 
     def without_duplicates(self):
         """(новый каталог, сколько произведений удалено)."""
-        # дубликаты — произведения, у которых совпадают все поля, то есть строка файла
-        new_catalog = self.with_films(self.films.unique_by(str))
+        new_catalog = self.with_films(self.films.unique_by(identity))
         return new_catalog, self.film_count() - new_catalog.film_count()
 
     # --- Вычисления над каталогом ---
