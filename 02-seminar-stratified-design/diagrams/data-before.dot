@@ -1,0 +1,57 @@
+// Структуры данных исходного состояния. Сборка: dot -Tsvg data-before.dot -o data-before.svg
+digraph data {
+  label="Структуры данных: исходное состояние"; labelloc=t; fontsize=18; fontname="Helvetica";
+  rankdir=TB; nodesep=0.5; ranksep=0.6;
+  node [shape=plaintext, fontname="Helvetica", fontsize=11];
+  edge [fontname="Helvetica", fontsize=10, color="#555555"];
+
+  Catalog [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#dbe8f8" COLOR="#2463a8">
+    <TR><TD BGCOLOR="#2463a8"><FONT COLOR="white"><B>Catalog</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT">films: Playlist<BR ALIGN="LEFT"/>viewers: tuple[Viewer]<BR ALIGN="LEFT"/></TD></TR>
+    <TR><TD ALIGN="LEFT"><FONT COLOR="#555555">15 методов; statistics() → dict<BR ALIGN="LEFT"/>с ключами-строками<BR ALIGN="LEFT"/></FONT></TD></TR>
+  </TABLE>>];
+
+  Playlist [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#dbe8f8" COLOR="#2463a8">
+    <TR><TD BGCOLOR="#2463a8"><FONT COLOR="white"><B>Playlist</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT">cinema: tuple[Cinematography]<BR ALIGN="LEFT"/></TD></TR>
+    <TR><TD ALIGN="LEFT"><FONT COLOR="#555555">21 метод, из них 8 не используются:<BR ALIGN="LEFT"/>add_first, add_last, get_first, get_last,<BR ALIGN="LEFT"/>clear, contains, remove, to_lines<BR ALIGN="LEFT"/></FONT></TD></TR>
+  </TABLE>>];
+
+  Viewer [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#dbe8f8" COLOR="#2463a8">
+    <TR><TD BGCOLOR="#2463a8"><FONT COLOR="white"><B>Viewer</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT">name: str<BR ALIGN="LEFT"/>favorite_genres: tuple[str]<BR ALIGN="LEFT"/>history: tuple[название]<BR ALIGN="LEFT"/>ratings: dict[название, оценка]<BR ALIGN="LEFT"/>playlist: tuple[название]<BR ALIGN="LEFT"/></TD></TR>
+    <TR><TD ALIGN="LEFT"><FONT COLOR="#555555">7 методов, в т.ч. recommend()<BR ALIGN="LEFT"/>и profile_lines() — текст для экрана<BR ALIGN="LEFT"/></FONT></TD></TR>
+  </TABLE>>];
+
+  Cinematography [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#dbe8f8" COLOR="#2463a8">
+    <TR><TD BGCOLOR="#2463a8"><FONT COLOR="white"><B>Cinematography</B> (абстрактный)</FONT></TD></TR>
+    <TR><TD ALIGN="LEFT">title, director, genre: str<BR ALIGN="LEFT"/>release: int (1895..2026)<BR ALIGN="LEFT"/>rating: int (1..10)<BR ALIGN="LEFT"/>views: int<BR ALIGN="LEFT"/>votes: tuple[int]<BR ALIGN="LEFT"/></TD></TR>
+    <TR><TD ALIGN="LEFT"><FONT COLOR="#555555">with_view, with_vote, with_raised_rating;<BR ALIGN="LEFT"/>__str__ — строка файла, она же ключ<BR ALIGN="LEFT"/>для поиска дубликатов и текст на экране;<BR ALIGN="LEFT"/>__lt__ — порядок сортировки;<BR ALIGN="LEFT"/>details(), describe() — текст для экрана<BR ALIGN="LEFT"/></FONT></TD></TR>
+  </TABLE>>];
+
+  Film [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#dbe8f8" COLOR="#2463a8">
+    <TR><TD BGCOLOR="#2463a8"><FONT COLOR="white"><B>Film</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT">budget: int &gt; 0<BR ALIGN="LEFT"/>effect: Yes | No<BR ALIGN="LEFT"/></TD></TR>
+    <TR><TD ALIGN="LEFT"><FONT COLOR="#555555">__str__, details, describe<BR ALIGN="LEFT"/></FONT></TD></TR>
+  </TABLE>>];
+
+  Cartoon [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#dbe8f8" COLOR="#2463a8">
+    <TR><TD BGCOLOR="#2463a8"><FONT COLOR="white"><B>Cartoon</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT">character: str<BR ALIGN="LEFT"/>kind: Short | Full | Serial<BR ALIGN="LEFT"/></TD></TR>
+    <TR><TD ALIGN="LEFT"><FONT COLOR="#555555">__str__, details, describe<BR ALIGN="LEFT"/></FONT></TD></TR>
+  </TABLE>>];
+
+  Serial [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#dbe8f8" COLOR="#2463a8">
+    <TR><TD BGCOLOR="#2463a8"><FONT COLOR="white"><B>Serial</B></FONT></TD></TR>
+    <TR><TD ALIGN="LEFT">series: int &gt; 0<BR ALIGN="LEFT"/>seasons: int &gt; 0<BR ALIGN="LEFT"/></TD></TR>
+    <TR><TD ALIGN="LEFT"><FONT COLOR="#555555">__str__, details, describe<BR ALIGN="LEFT"/></FONT></TD></TR>
+  </TABLE>>];
+
+  Catalog -> Playlist [label=" 1 : 1", dir=back, arrowtail=diamond];
+  Catalog -> Viewer [label=" 1 : N", dir=back, arrowtail=diamond];
+  Playlist -> Cinematography [label=" 1 : N", dir=back, arrowtail=diamond];
+  Viewer -> Cinematography [label=" N : M по названию", style=dashed, arrowhead=vee];
+  Cinematography -> Film [arrowhead=none, dir=back, arrowtail=empty];
+  Cinematography -> Cartoon [arrowhead=none, dir=back, arrowtail=empty];
+  Cartoon -> Serial [arrowhead=none, dir=back, arrowtail=empty];
+}
