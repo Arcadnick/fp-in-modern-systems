@@ -9,16 +9,14 @@
 import traceback
 from datetime import datetime
 
-from filmoteka.queries import better_of, genre_matches
+from filmoteka.queries import compare_films
 from filmoteka.records import with_default_extension
 from filmoteka.rules import parse_genres
 from filmoteka.catalog import Catalog
-from filmoteka.cinematography import Cartoon, Film, Serial
 from filmoteka.colors import BLACK_ON_GREEN, BLUE, CYAN, GREEN, RED, RESET
 from filmoteka.constructors import make_test_catalog
 from filmoteka.exceptions import (
     FilmotekaError,
-    IdenticalMoviesException,
     NumberFilmException,
     RatingException,
 )
@@ -157,15 +155,13 @@ def compare(catalog):
     second = choose_film(catalog, "Введите номер второго фильма для сравнения")
     if second is None:
         return catalog
-    if first is second:
-        raise IdenticalMoviesException()
-    better = better_of(first, second)
-    if better is None:
-        print(f"У фильмов одинаковый рейтинг: {first.rating}")
+    result = compare_films(first, second)
+    if result.equal:
+        print(f"У фильмов одинаковый рейтинг: {result.better.rating}")
     else:
-        worse = second if better is first else first
         print("У фильмов разный рейтинг")
-        print(f"«{better.title}» ({better.rating}) лучше, чем «{worse.title}» ({worse.rating})")
+        print(f"«{result.better.title}» ({result.better.rating}) лучше, "
+              f"чем «{result.worse.title}» ({result.worse.rating})")
     return catalog
 
 
@@ -192,14 +188,12 @@ def filter_films(catalog):
     choice = input("> ").strip()
     if choice == "1":
         genre = input("Введите жанр: ").strip()
-        result = catalog.films_where(lambda item: genre_matches(item, genre))
+        result = catalog.films_of_genre(genre)
     elif choice == "2":
-        kind = input("Введите тип: ").strip()
-        types = {"film": Film, "cartoon": Cartoon, "serial": Serial}
-        if kind.lower() not in types:
+        result = catalog.films_of_kind(input("Введите тип: ").strip())
+        if result is None:
             error("Такого типа нет")
             return catalog
-        result = catalog.films_where(lambda item: type(item) is types[kind.lower()])
     else:
         error("Введён некорректный пункт")
         return catalog
@@ -212,8 +206,8 @@ def filter_films(catalog):
 
 def remove_duplicates(catalog):
     catalog.check_not_empty()
-    new_catalog = catalog.without_duplicates()
-    print(f"Удалено дубликатов: {catalog.film_count() - new_catalog.film_count()}")
+    new_catalog, removed = catalog.without_duplicates()
+    print(f"Удалено дубликатов: {removed}")
     return new_catalog
 
 
@@ -309,18 +303,18 @@ def statistics(catalog):
     catalog.check_not_empty()
     stats = catalog.statistics(top=3)
     header("Средний рейтинг по жанрам:")
-    for genre, rating in stats["by_genre"].items():
+    for genre, rating in stats.by_genre.items():
         print(f"  {genre}: {rating:.1f}")
-    header(f"Топ-{len(stats['top'])} по рейтингу:")
-    for i, film in enumerate(stats["top"], start=1):
+    header(f"Топ-{len(stats.top)} по рейтингу:")
+    for i, film in enumerate(stats.top, start=1):
         print(f"  {i}. {film.title} — {film.rating}")
     header("Просмотры:")
-    if stats["most_viewed"] is None:
+    if stats.most_viewed is None:
         print("  Пока никто ничего не смотрел")
     else:
-        print(f"  Всего просмотров: {stats['total_views']}")
-        print(f"  Самое просматриваемое: {stats['most_viewed'].title} ({stats['most_viewed'].views})")
-    print(f"  Зрителей зарегистрировано: {stats['viewers']}")
+        print(f"  Всего просмотров: {stats.total_views}")
+        print(f"  Самое просматриваемое: {stats.most_viewed.title} ({stats.most_viewed.views})")
+    print(f"  Зрителей зарегистрировано: {stats.viewers}")
     return catalog
 
 

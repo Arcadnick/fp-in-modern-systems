@@ -9,13 +9,13 @@
 
 from filmoteka.generic import copy_with, find_first, replaced, same_text
 from filmoteka.queries import (
-    average_rating_by_genre,
-    most_viewed,
+    genre_matches,
+    is_kind,
+    is_known_kind,
     recommendations,
     sorted_by_name,
     sorted_by_rating,
-    top_by_rating,
-    total_views,
+    statistics,
 )
 from filmoteka.exceptions import EmptyPlaylistException, NoDataUploadedException, ViewerException
 from filmoteka.playlist import Playlist
@@ -48,6 +48,15 @@ class Catalog:
 
     def films_where(self, predicate):
         return tuple(self.films.filtered(predicate))
+
+    def films_of_genre(self, genre):
+        return self.films_where(lambda film: genre_matches(film, genre))
+
+    def films_of_kind(self, kind):
+        """Произведения типа kind (Film, Cartoon, Serial) или None, если такого типа нет."""
+        if not is_known_kind(kind):
+            return None
+        return self.films_where(lambda film: is_kind(film, kind))
 
     def has_viewers(self):
         return len(self.viewers) > 0
@@ -102,8 +111,10 @@ class Catalog:
         return self.with_films(self.films.sorted_with(sorted_by_rating))
 
     def without_duplicates(self):
+        """(новый каталог, сколько произведений удалено)."""
         # дубликаты — произведения, у которых совпадают все поля, то есть строка файла
-        return self.with_films(self.films.unique_by(str))
+        new_catalog = self.with_films(self.films.unique_by(str))
+        return new_catalog, self.film_count() - new_catalog.film_count()
 
     # --- Вычисления над каталогом ---
 
@@ -113,12 +124,6 @@ class Catalog:
 
     def statistics(self, top=3):
         """Средний рейтинг по жанрам, топ по рейтингу и просмотры."""
-        if len(self.films) == 0:
+        if self.is_empty():
             raise EmptyPlaylistException()
-        return {
-            "by_genre": average_rating_by_genre(self.films),
-            "top": top_by_rating(self.films, top),
-            "most_viewed": most_viewed(self.films),
-            "total_views": total_views(self.films),
-            "viewers": len(self.viewers),
-        }
+        return statistics(self.films, len(self.viewers), top)
