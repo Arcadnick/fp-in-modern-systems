@@ -9,6 +9,7 @@
 
 from filmoteka.generic import copy_with, find_first, replaced, same_text
 from filmoteka.queries import (
+    compare_films,
     genre_matches,
     identity,
     is_kind,
@@ -24,8 +25,8 @@ from filmoteka.viewer import Viewer
 
 
 class Catalog:
-    def __init__(self, films=None, viewers=()):
-        self.films = films if films is not None else Playlist()
+    def __init__(self, films=(), viewers=()):
+        self.films = Playlist(films)
         self.viewers = tuple(viewers)
 
     # --- Чтение ---
@@ -117,6 +118,10 @@ class Catalog:
         return new_catalog, self.film_count() - new_catalog.film_count()
 
     # --- Вычисления над каталогом ---
+
+    def compare(self, first, second):
+        """Какое из двух произведений каталога лучше по рейтингу."""
+        return compare_films(first, second)
 
     def recommendations_for(self, viewer, count=3):
         """Непросмотренные зрителем произведения его любимых жанров, лучшие по рейтингу."""

@@ -2,7 +2,6 @@
 
 from filmoteka.catalog import Catalog
 from filmoteka.cinematography import Cartoon, Film, Serial
-from filmoteka.playlist import Playlist
 
 
 def make_test_films():
@@ -21,6 +20,6 @@ def make_test_films():
 
 
 def make_test_catalog():
-    return (Catalog(Playlist(make_test_films()))
+    return (Catalog(make_test_films())
             .with_viewer("Алексей", ["Comedy", "Adventure"])
             .with_viewer("Мария", ["Fantasy", "Detective", "Family"]))

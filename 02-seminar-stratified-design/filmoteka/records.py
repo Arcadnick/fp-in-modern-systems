@@ -6,7 +6,6 @@
 from filmoteka.catalog import Catalog
 from filmoteka.cinematography import Cartoon, Film, Serial
 from filmoteka.exceptions import InvalidPropertyException, ReadingFromFileException
-from filmoteka.playlist import Playlist
 
 
 def to_record(film):
@@ -54,7 +53,7 @@ def parse_catalog(lines):
     """Строки файла -> каталог без зрителей. Первая строка — количество записей."""
     try:
         n = int(lines[0])
-        return Catalog(Playlist([parse_cinematography(line) for line in lines[1:n + 1]]))
+        return Catalog([parse_cinematography(line) for line in lines[1:n + 1]])
     except (ValueError, IndexError, InvalidPropertyException) as e:
         raise ReadingFromFileException(f"Некорректные данные: {e}")
 
