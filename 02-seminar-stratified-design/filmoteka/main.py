@@ -9,9 +9,7 @@
 import traceback
 from datetime import datetime
 
-from filmoteka.queries import compare_films
-from filmoteka.records import with_default_extension
-from filmoteka.rules import parse_genres
+from filmoteka import views
 from filmoteka.catalog import Catalog
 from filmoteka.colors import BLACK_ON_GREEN, BLUE, CYAN, GREEN, RED, RESET
 from filmoteka.constructors import make_test_catalog
@@ -20,6 +18,9 @@ from filmoteka.exceptions import (
     NumberFilmException,
     RatingException,
 )
+from filmoteka.queries import compare_films
+from filmoteka.records import with_default_extension
+from filmoteka.rules import parse_genres
 from filmoteka.storage import load_catalog, save_catalog
 
 
@@ -71,9 +72,10 @@ def print_menu():
     return int(input("> "))
 
 
-def print_films(films):
-    print("Список произведений:")
-    print_lines(f"{i}. {film}" for i, film in enumerate(films, start=1))
+def print_section(section):
+    title, lines = section
+    header(title)
+    print_lines(lines)
 
 
 def get_data(catalog):
@@ -111,14 +113,13 @@ def writer(catalog):
     catalog.check_not_empty()
     for film in catalog.all_films():
         print(f"{BLUE}\nИнформация о произведении:{RESET}")
-        print_lines(film.details())
-        print(film.describe())
+        print_lines(views.film_details(film))
     return catalog
 
 
 def choose_film(catalog, prompt):
     """Спросить номер произведения. 0 — отказ, вернёт None."""
-    print_films(catalog.all_films())
+    print_lines(views.numbered(catalog.all_films()))
     while True:
         try:
             n = int(input(f"{prompt} (0 — выход): "))
@@ -140,7 +141,7 @@ def raise_up(catalog):
             return catalog
         try:
             new_catalog, raised = catalog.raise_rating(film)
-            success(f"Рейтинг «{film.title}» успешно поднят на одно значение и составляет {raised.rating}")
+            success(views.raised_message(raised))
             return new_catalog
         except RatingException as e:
             error(e)
@@ -155,13 +156,7 @@ def compare(catalog):
     second = choose_film(catalog, "Введите номер второго фильма для сравнения")
     if second is None:
         return catalog
-    result = compare_films(first, second)
-    if result.equal:
-        print(f"У фильмов одинаковый рейтинг: {result.better.rating}")
-    else:
-        print("У фильмов разный рейтинг")
-        print(f"«{result.better.title}» ({result.better.rating}) лучше, "
-              f"чем «{result.worse.title}» ({result.worse.rating})")
+    print_lines(views.comparison_lines(compare_films(first, second)))
     return catalog
 
 
@@ -169,7 +164,7 @@ def sort_films(catalog, sort):
     """Общая часть пунктов 7–8: отсортировать каталог функцией sort и показать."""
     catalog.check_not_empty()
     new_catalog = sort(catalog)
-    print_films(new_catalog.all_films())
+    print_lines(views.numbered(new_catalog.all_films()))
     return new_catalog
 
 
@@ -200,14 +195,14 @@ def filter_films(catalog):
     if len(result) == 0:
         print("Ничего не найдено")
     else:
-        print_films(result)
+        print_lines(views.numbered(result))
     return catalog
 
 
 def remove_duplicates(catalog):
     catalog.check_not_empty()
     new_catalog, removed = catalog.without_duplicates()
-    print(f"Удалено дубликатов: {removed}")
+    print(views.duplicates_message(removed))
     return new_catalog
 
 
@@ -219,7 +214,7 @@ def register_viewer(catalog):
         return catalog
     genres = input("Любимые жанры через запятую (например, Comedy, Adventure): ")
     new_catalog = catalog.with_viewer(name, parse_genres(genres))
-    success(f"Зритель {name} зарегистрирован")
+    success(views.registered_message(name))
     return new_catalog
 
 
@@ -227,7 +222,7 @@ def choose_viewer(catalog):
     if not catalog.has_viewers():
         error("Зрителей пока нет, сначала зарегистрируйте зрителя (пункт 11)")
         return None
-    print("Зрители: " + ", ".join(catalog.viewer_names()))
+    print(views.viewers_line(catalog.viewer_names()))
     name = input("Введите имя зрителя: ").strip()
     viewer = catalog.find_viewer(name)
     if viewer is None:
@@ -257,7 +252,7 @@ def with_viewer_and_film(catalog, prompt, action):
 def watch_film(catalog):
     def watch(viewer, film):
         new_catalog, watched = catalog.watch(viewer, film)
-        success(f"{viewer.name} посмотрел(а) «{film.title}». Всего просмотров: {watched.views}")
+        success(views.watched_message(viewer, watched))
         return new_catalog
     return with_viewer_and_film(catalog, "Введите номер фильма для просмотра", watch)
 
@@ -266,7 +261,7 @@ def rate_film(catalog):
     def rate(viewer, film):
         score = int(input("Ваша оценка (1..10): "))
         new_catalog, voted = catalog.rate(viewer, film, score)
-        success(f"Оценка принята. Новый рейтинг «{film.title}»: {voted.rating}")
+        success(views.rated_message(voted))
         return new_catalog
     return with_viewer_and_film(catalog, "Введите номер фильма для оценки", rate)
 
@@ -274,47 +269,29 @@ def rate_film(catalog):
 def add_to_viewer_playlist(catalog):
     def add(viewer, film):
         new_catalog = catalog.add_to_playlist(viewer, film)
-        print(f"«{film.title}» добавлен(а) в плейлист {viewer.name}")
+        print(views.added_message(viewer, film))
         return new_catalog
     return with_viewer_and_film(catalog, "Введите номер фильма для плейлиста", add)
 
 
 def viewer_profile(catalog):
     def show(viewer):
-        header(f"\nЗритель: {viewer.name}")
-        print_lines(viewer.profile_lines())
+        print_section(views.profile_section(viewer))
         return catalog
     return with_viewer(catalog, show)
 
 
 def recommend(catalog):
     def show(viewer):
-        header(f"Рекомендации для {viewer.name}:")
-        films = catalog.recommendations_for(viewer)
-        if len(films) == 0:
-            print("  Подходящих произведений не нашлось")
-        for film in films:
-            print(f"  {film.title} ({film.genre}), рейтинг {film.rating}")
+        print_section(views.recommendations_section(viewer, catalog.recommendations_for(viewer)))
         return catalog
     return with_viewer(catalog, show)
 
 
 def statistics(catalog):
     catalog.check_not_empty()
-    stats = catalog.statistics(top=3)
-    header("Средний рейтинг по жанрам:")
-    for genre, rating in stats.by_genre.items():
-        print(f"  {genre}: {rating:.1f}")
-    header(f"Топ-{len(stats.top)} по рейтингу:")
-    for i, film in enumerate(stats.top, start=1):
-        print(f"  {i}. {film.title} — {film.rating}")
-    header("Просмотры:")
-    if stats.most_viewed is None:
-        print("  Пока никто ничего не смотрел")
-    else:
-        print(f"  Всего просмотров: {stats.total_views}")
-        print(f"  Самое просматриваемое: {stats.most_viewed.title} ({stats.most_viewed.views})")
-    print(f"  Зрителей зарегистрировано: {stats.viewers}")
+    for section in views.statistics_sections(catalog.statistics(top=3)):
+        print_section(section)
     return catalog
 
 

@@ -1,7 +1,6 @@
 """Произведения кинематографа: порт Cinematography.cs, Films.cs, Cartoon.cs, Serial.cs."""
 
-from abc import ABC, abstractmethod
-
+from filmoteka.exceptions import InvalidPropertyException, RatingException
 from filmoteka.generic import copy_with, is_positive, one_of
 from filmoteka.rules import (
     MAX_RATING,
@@ -13,7 +12,6 @@ from filmoteka.rules import (
     is_valid_year,
     rating_from_votes,
 )
-from filmoteka.exceptions import InvalidPropertyException, RatingException
 
 EFFECTS = ("Yes", "No")
 CARTOON_KINDS = ("Short", "Full", "Serial")
@@ -26,7 +24,7 @@ def checked(value, is_valid, message):
     return value
 
 
-class Cinematography(ABC):
+class Cinematography:
     """Произведение кинематографа.
 
     После создания не меняется: операции возвращают изменённую копию (copy-on-write).
@@ -72,17 +70,6 @@ class Cinematography(ABC):
 
     __hash__ = object.__hash__
 
-    def details(self):
-        """Информация о произведении построчно."""
-        return [
-            f"Название: {self.title}",
-            f"Режиссёр: {self.director}",
-            f"Жанр: {self.genre}",
-            f"Год выхода: {self.release}",
-            f"Рейтинг: {self.rating}",
-            f"Просмотров: {self.views}",
-        ]
-
     def __str__(self):
         return f"Cinematography|{self.title}|{self.director}|{self.genre}|{self.release}|{self.rating}"
 
@@ -100,10 +87,6 @@ class Cinematography(ABC):
         """Копия с новой оценкой зрителя и пересчитанным рейтингом."""
         votes = self.votes + (score,)
         return copy_with(self, votes=votes, rating=rating_from_votes(votes))
-
-    @abstractmethod
-    def describe(self):
-        """Что это за произведение (ToDo в оригинале)."""
 
 
 class Film(Cinematography):
@@ -128,18 +111,9 @@ class Film(Cinematography):
     def effect(self, value):
         self._effect = checked(value, one_of(EFFECTS), f"Неверное значение ({value}), возможные — Yes/No")
 
-    def details(self):
-        return super().details() + [
-            f"Бюджет: {self.budget}",
-            f"Живые спецэффекты: {self.effect}",
-        ]
-
     def __str__(self):
         return (f"Film|{self.title}|{self.director}|{self.genre}|{self.release}|{self.rating}"
                 f"|{self.budget}|{self.effect}")
-
-    def describe(self):
-        return "Это фильм"
 
 
 class Cartoon(Cinematography):
@@ -157,18 +131,9 @@ class Cartoon(Cinematography):
         self._kind = checked(value, one_of(CARTOON_KINDS),
                              f"Неверное значение ({value}), возможные варианты — Full, Short, Serial")
 
-    def details(self):
-        return super().details() + [
-            f"Персонажи: {self.character}",
-            f"Тип: {self.kind}",
-        ]
-
     def __str__(self):
         return (f"Cartoon|{self.title}|{self.director}|{self.genre}|{self.release}|{self.rating}"
                 f"|{self.character}|{self.kind}")
-
-    def describe(self):
-        return "Это мультфильм"
 
 
 class Serial(Cartoon):
@@ -194,15 +159,7 @@ class Serial(Cartoon):
         self._seasons = checked(value, is_positive,
                                 f"Неверное количество сезонов ({value}), оно должно быть больше 0")
 
-    def details(self):
-        return super().details() + [
-            f"Серий: {self.series}",
-            f"Сезонов: {self.seasons}",
-        ]
-
     def __str__(self):
         return (f"Serial|{self.title}|{self.director}|{self.genre}|{self.release}|{self.rating}"
                 f"|{self.character}|{self.kind}|{self.series}|{self.seasons}")
 
-    def describe(self):
-        return "Это мультсериал"

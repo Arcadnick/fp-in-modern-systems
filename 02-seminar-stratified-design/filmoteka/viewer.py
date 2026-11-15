@@ -40,15 +40,3 @@ class Viewer:
         if title in self.playlist:
             raise ViewerException(f"«{title}» уже есть в плейлисте {self.name}")
         return copy_with(self, playlist=self.playlist + (title,))
-
-    def profile_lines(self):
-        lines = [
-            f"Любимые жанры: {', '.join(self.favorite_genres) or '—'}",
-            f"Просмотрено: {len(self.history)}",
-        ]
-        for title in self.history:
-            lines.append(f"  {title}, оценка: {self.ratings.get(title, '—')}")
-        lines.append(f"В плейлисте: {len(self.playlist)}")
-        for title in self.playlist:
-            lines.append(f"  {title}")
-        return lines
