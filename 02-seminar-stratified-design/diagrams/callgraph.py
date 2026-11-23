@@ -25,6 +25,7 @@
 """
 
 import ast
+from html import escape
 import builtins
 import runpy
 import sys
@@ -562,20 +563,20 @@ def to_dot(nodes, edges, height, band, titles, title, top_layers):
     lines = [
         "digraph callgraph {",
         f'  label="{title}"; labelloc=t; fontsize=24; fontname="Helvetica";',
-        "  rankdir=TB; newrank=true; nodesep=0.1; ranksep=0.3; concentrate=true;",
-        '  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10, height=0.3];',
+        "  rankdir=TB; newrank=true; nodesep=0.22; ranksep=0.55; splines=polyline; bgcolor=white; pad=0.35;",
+        '  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=12, height=0.42, margin="0.14,0.09", penwidth=1.1];',
         # положение узлов задают только слои; стрелки рисуются поверх и раскладку не двигают
-        '  edge [constraint=false, arrowsize=0.45, color="#8a96a366", penwidth=0.8];',
+        '  edge [constraint=false, arrowsize=0.45, color="#94a3b855", penwidth=0.7];',
     ]
     rows = []  # строки рисунка сверху вниз
     for index, layer_title in enumerate(titles):
         members = [n for n in nodes if band[n] == index]
         if not members:
             continue
-        shade = "#f7f7f2" if index % 2 == 0 else "#eef2f7"
+        shade = "#f8fafc" if index % 2 == 0 else "#eef3f8"
         lines.append(f"  subgraph cluster_{index} {{")
         lines.append(f'    label="{layer_title}"; labeljust=l; fontsize=15; fontname="Helvetica-Bold";')
-        lines.append(f'    style=filled; fillcolor="{shade}"; color="#c8c8c8";')
+        lines.append(f'    style=filled; fillcolor="{shade}"; color="#d5dfe9"; margin=18;')
         for level in sorted({height[n] for n in members}, reverse=True):
             row = sorted((n for n in members if height[n] == level), key=row_order)
             chunks = [row[i:i + MAX_ROW] for i in range(0, len(row), MAX_ROW)]
@@ -604,6 +605,56 @@ def to_dot(nodes, edges, height, band, titles, title, top_layers):
         lines.append(f'  "{source}" -> "{target}"{style};')
     lines.append("}")
     return "\n".join(lines) + "\n"
+
+
+def overview_svg(nodes, edges, band, titles, title, top_layers):
+    """Обзор для слайда: все слои, соседние связи и прямые обходы к данным/языку.
+
+    Числа на стрелках — количество связей полного графа, а не длина стрелки.
+    Остальные межслойные и внутрислойные связи остаются в полном SVG.
+    """
+    step = 43
+    h = 70 + len(titles) * step
+    parts = [f'<svg xmlns="http://www.w3.org/2000/svg" width="900" height="{h}" viewBox="0 0 900 {h}">',
+        f'<title>{escape(title)} — обзор слоёв</title>',
+        '<desc>Все слои и категории узлов. Серые стрелки показывают связи соседних слоёв, оранжевые — прямые зависимости верхних слоёв от данных и языка. Полный граф находится в отдельном SVG.</desc>',
+        '<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10" fill="#94a3b8"/></marker><marker id="warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10" fill="#d35400"/></marker></defs>',
+        '<rect width="100%" height="100%" fill="white"/>',
+        '<g font-family="Helvetica,Arial,sans-serif" fill="#1d2329">',
+        '<text x="18" y="20" font-size="12" fill="#5f6b76">СЛОЙ / НАЗНАЧЕНИЕ</text><text x="470" y="20" font-size="12" fill="#5f6b76">Д / В / ДАННЫЕ / ЯЗЫК</text>',
+        '<text x="714" y="20" font-size="12" fill="#d35400">ПРЯМЫЕ ОБХОДЫ</text>']
+    short = {
+        'Операции: диалоги, файлы, история, каталог': 'Операции · Catalog, dialogs, storage, history',
+        'Строительные блоки: представление, формат файла, консоль, плейлист, запросы': 'Блоки · views, records, console, Playlist, queries',
+        'Сущности: произведения и зрители': 'Сущности · произведения и зрители',
+    }
+    colors = {'action':'#c0392b','calculation':'#1e8449','data':'#2463a8','language':'#7a7a7a'}
+    # Имена категорий берутся из mark_actions; язык выделяется по kind.
+    for i, layer in enumerate(titles):
+        y = 34 + i * step
+        members = [n for n in nodes if band[n] == i]
+        counts = [sum(nodes[n]['kind'] != 'language' and nodes[n]['category'] == c for n in members) for c in ('действие','вычисление','данные')]
+        counts.append(sum(nodes[n]['kind'] == 'language' for n in members))
+        parts += [f'<rect x="8" y="{y}" width="655" height="34" rx="5" fill="{["#f5f8fb","#edf2f7"][i%2]}"/>',
+            f'<text x="20" y="{y+22}" font-size="13" fill="#7a8691">{i+1:02}</text>',
+            f'<text x="50" y="{y+22}" font-size="14" font-weight="600">{escape(short.get(layer,layer))}</text>']
+        for j, count in enumerate(counts):
+            parts.append(f'<text x="{500+j*43}" y="{y+22}" font-size="14" text-anchor="middle" fill="{list(colors.values())[j]}">{count or "·"}</text>')
+        if i+1 < len(titles):
+            count = sum(band[a] == i and band[b] == i+1 for a,b in edges)
+            if count:
+                parts += [f'<path d="M682 {y+17}V{y+step+17}" stroke="#94a3b8" fill="none" marker-end="url(#arrow)"/>',f'<text x="691" y="{y+43}" font-size="10" fill="#64748b">{count}</text>']
+    low = titles.index('Данные')
+    for i, layer in enumerate(titles):
+        if layer not in top_layers: continue
+        for j in range(low,len(titles)):
+            count = sum(band[a] == i and band[b] == j for a,b in edges)
+            if not count: continue
+            x = 742 + i*45 + (j-low)*19
+            y1,y2 = 51+i*step,51+j*step
+            parts += [f'<path d="M665 {y1}H{x}V{y2}H665" fill="none" stroke="#d35400" stroke-width="1.6" marker-end="url(#warn)"/>', f'<rect x="{x-12}" y="{(y1+y2)/2-10}" width="24" height="19" rx="4" fill="white"/>',f'<text x="{x}" y="{(y1+y2)/2+4}" font-size="12" text-anchor="middle" fill="#d35400">{count}</text>']
+    parts += [f'<text x="18" y="{h-10}" font-size="12" fill="#5f6b76">Числа на стрелках — связи; внутри строк — узлы. Остальные связи — в полном графе.</text>','</g></svg>']
+    return '\n'.join(parts)
 
 
 def to_markdown(m, nodes, height, band, titles, title):
@@ -676,6 +727,7 @@ def main(package_dir, layers_file, out):
         print(f"стрелка вверх: {source} ({titles[band[source]]}) -> {target} ({titles[band[target]]})")
     m = metrics(nodes, edges, height, band, titles, config["TOP_LAYERS"], config["BARRIER"])
     Path(out + ".dot").write_text(to_dot(nodes, edges, height, band, titles, config["TITLE"], config["TOP_LAYERS"]), encoding="utf-8")
+    Path(out + "-overview.svg").write_text(overview_svg(nodes, edges, band, titles, config["TITLE"], config["TOP_LAYERS"]), encoding="utf-8")
     Path(out + ".md").write_text(to_markdown(m, nodes, height, band, titles, config["TITLE"]), encoding="utf-8")
     print(f"узлов {len(nodes)}, функций {m['functions']}, стрелок {m['edges']}, слоёв {m['bands']}, "
           f"подуровней {m['layers']}, самая длинная между функциями {m['longest_in_layers']} сл., "

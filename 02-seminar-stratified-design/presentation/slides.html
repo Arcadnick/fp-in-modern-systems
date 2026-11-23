@@ -150,16 +150,16 @@
   <h2>Граф вызовов: исходное состояние</h2>
   <p class="lead">Строится скриптом <code>diagrams/callgraph.py</code> по исходному коду: 143 функции и метода, 36 конструкций языка, 486 стрелок</p>
   <div class="graph-wrap grow">
-    <div class="figure"><a href="../diagrams/callgraph-before.svg" target="_blank"><img src="../diagrams/callgraph-before.svg" alt="Граф вызовов до изменений"></a></div>
+    <div class="figure"><a href="../diagrams/callgraph-before.svg" target="_blank"><img src="../diagrams/callgraph-before-overview.svg" alt="Граф вызовов до изменений"></a></div>
     <div class="legend">
       <div><span class="sw" style="background:var(--action-soft);border-color:var(--action)"></span>действие</div>
       <div><span class="sw" style="background:var(--calc-soft);border-color:var(--calc)"></span>вычисление</div>
       <div><span class="sw" style="background:var(--data-soft);border-color:var(--data)"></span>данные: поля, исключения</div>
       <div><span class="sw" style="background:#ececec;border-color:#7a7a7a"></span>язык: функции, методы str/list, for, [ ]</div>
       <div><span class="sw" style="background:var(--warn);border-color:var(--warn);height:4px"></span>верхний слой → данные и язык напрямую</div>
-      <p class="small" style="margin-top:14px">Слой — полоса с назначением. Если функции слоя вызывают друг друга, он делится на подуровни (цифры слева), поэтому все стрелки идут вниз.</p>
+      <p class="small" style="margin-top:14px">Обзор: одна строка — один слой. Д / В — действия и вычисления. Серые стрелки — связи соседних слоёв, оранжевые — обходы к данным и языку.</p>
       <p class="small">Учтены неявные вызовы: <code>str(film)</code> → <code>__str__</code>, <code>sorted</code> → <code>__lt__</code>, <code>len</code> и <code>for</code> по плейлисту.</p>
-      <p class="small">Категория «действие» вычисляется: функция вызывает <code>input</code>, <code>print</code>, файлы — сама или через другие.</p>
+      <p class="small">Показаны выбранные межслойные связи. <b>Клик по схеме — полный граф</b> со всеми методами, подуровнями и стрелками.</p>
     </div>
   </div>
   <div class="num">3</div>
@@ -432,7 +432,7 @@ KIND_VIEWS = {
   <h2>Граф вызовов: после изменений</h2>
   <p class="lead">Слой — уровень абстракции: на одном уровне стоят каталог (предметная область), диалоги и файлы (интерфейс)</p>
   <div class="graph-wrap grow">
-    <div class="figure"><a href="../diagrams/callgraph-after.svg" target="_blank"><img src="../diagrams/callgraph-after.svg" alt="Граф вызовов после изменений"></a></div>
+    <div class="figure"><a href="../diagrams/callgraph-after.svg" target="_blank"><img src="../diagrams/callgraph-after-overview.svg" alt="Граф вызовов после изменений"></a></div>
     <div class="legend">
       <div><b>Приложение</b> — цикл меню</div>
       <div><b>Сценарии меню</b> — 17 команд</div>
@@ -443,7 +443,7 @@ KIND_VIEWS = {
       <div><b>Общие операции</b> — <code>generic</code></div>
       <div><b>Данные · Язык Python</b></div>
       <p class="small" style="margin-top:12px">Действия — только в <code>main</code>, <code>commands</code>, <code>dialogs</code>, <code>console</code>, <code>storage</code>. Всё ниже «Операций», кроме консоли, — вычисления.</p>
-      <p class="small">Оранжевая стрелка одна: цикл меню берёт команду из таблицы по номеру.</p>
+      <p class="small">Оранжевый обход остался один: выбор команды по индексу. Д / В — действия и вычисления; числа на стрелках — связи. <b>Клик — полный граф.</b></p>
     </div>
   </div>
   <div class="num">10</div>

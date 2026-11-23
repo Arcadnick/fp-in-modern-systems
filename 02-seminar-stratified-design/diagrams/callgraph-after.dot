@@ -1,17 +1,17 @@
 digraph callgraph {
   label="Граф вызовов: после изменений"; labelloc=t; fontsize=24; fontname="Helvetica";
-  rankdir=TB; newrank=true; nodesep=0.1; ranksep=0.3; concentrate=true;
-  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10, height=0.3];
-  edge [constraint=false, arrowsize=0.45, color="#8a96a366", penwidth=0.8];
+  rankdir=TB; newrank=true; nodesep=0.22; ranksep=0.55; splines=polyline; bgcolor=white; pad=0.35;
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=12, height=0.42, margin="0.14,0.09", penwidth=1.1];
+  edge [constraint=false, arrowsize=0.45, color="#94a3b855", penwidth=0.7];
   subgraph cluster_0 {
     label="Приложение: цикл меню"; labeljust=l; fontsize=15; fontname="Helvetica-Bold";
-    style=filled; fillcolor="#f7f7f2"; color="#c8c8c8";
+    style=filled; fillcolor="#f8fafc"; color="#d5dfe9"; margin=18;
     "R18_0" [shape=plaintext, style="", fontsize=11, fontcolor="#888888", label="18", width=0.2];
     { rank=same; "R18_0"; "main.main"; }
   }
   subgraph cluster_1 {
     label="Сценарии меню"; labeljust=l; fontsize=15; fontname="Helvetica-Bold";
-    style=filled; fillcolor="#eef2f7"; color="#c8c8c8";
+    style=filled; fillcolor="#eef3f8"; color="#d5dfe9"; margin=18;
     "R17_0" [shape=plaintext, style="", fontsize=11, fontcolor="#888888", label="17", width=0.2];
     { rank=same; "R17_0"; "commands.add_to_viewer_playlist"; "commands.rate_film"; "commands.watch_film"; }
     "R16_0" [shape=plaintext, style="", fontsize=11, fontcolor="#888888", label="16", width=0.2];
@@ -23,7 +23,7 @@ digraph callgraph {
   }
   subgraph cluster_2 {
     label="Операции: диалоги, файлы, история, каталог"; labeljust=l; fontsize=15; fontname="Helvetica-Bold";
-    style=filled; fillcolor="#f7f7f2"; color="#c8c8c8";
+    style=filled; fillcolor="#f8fafc"; color="#d5dfe9"; margin=18;
     "R14_0" [shape=plaintext, style="", fontsize=11, fontcolor="#888888", label="14", width=0.2];
     { rank=same; "R14_0"; "Catalog.raise_rating"; "Catalog.rate"; "Catalog.watch"; "constructors.make_test_catalog"; }
     "R13_0" [shape=plaintext, style="", fontsize=11, fontcolor="#888888", label="13", width=0.2];
@@ -41,7 +41,7 @@ digraph callgraph {
   }
   subgraph cluster_3 {
     label="Строительные блоки: представление, формат файла, консоль, плейлист, запросы"; labeljust=l; fontsize=15; fontname="Helvetica-Bold";
-    style=filled; fillcolor="#eef2f7"; color="#c8c8c8";
+    style=filled; fillcolor="#eef3f8"; color="#d5dfe9"; margin=18;
     "R11_0" [shape=plaintext, style="", fontsize=11, fontcolor="#888888", label="11", width=0.2];
     { rank=same; "R11_0"; "console.show_sections"; "queries.recommendations"; "queries.statistics"; "records.parse_films"; "views.film_details"; }
     "R10_0" [shape=plaintext, style="", fontsize=11, fontcolor="#888888", label="10", width=0.2];
@@ -61,7 +61,7 @@ digraph callgraph {
   }
   subgraph cluster_4 {
     label="Сущности: произведения и зрители"; labeljust=l; fontsize=15; fontname="Helvetica-Bold";
-    style=filled; fillcolor="#f7f7f2"; color="#c8c8c8";
+    style=filled; fillcolor="#f8fafc"; color="#d5dfe9"; margin=18;
     "R8_0" [shape=plaintext, style="", fontsize=11, fontcolor="#888888", label="8", width=0.2];
     { rank=same; "R8_0"; "Serial.__init__"; }
     "R7_0" [shape=plaintext, style="", fontsize=11, fontcolor="#888888", label="7", width=0.2];
@@ -75,13 +75,13 @@ digraph callgraph {
   }
   subgraph cluster_5 {
     label="Правила предметной области"; labeljust=l; fontsize=15; fontname="Helvetica-Bold";
-    style=filled; fillcolor="#eef2f7"; color="#c8c8c8";
+    style=filled; fillcolor="#eef3f8"; color="#d5dfe9"; margin=18;
     "R3_0" [shape=plaintext, style="", fontsize=11, fontcolor="#888888", label="3", width=0.2];
     { rank=same; "R3_0"; "rules.can_raise_rating"; "rules.is_valid_rating"; "rules.is_valid_year"; "rules.parse_genres"; "rules.rating_from_votes"; "rules.split_genres"; }
   }
   subgraph cluster_6 {
     label="Общие операции"; labeljust=l; fontsize=15; fontname="Helvetica-Bold";
-    style=filled; fillcolor="#f7f7f2"; color="#c8c8c8";
+    style=filled; fillcolor="#f8fafc"; color="#d5dfe9"; margin=18;
     "R2_0" [shape=plaintext, style="", fontsize=11, fontcolor="#888888", label="2", width=0.2];
     { rank=same; "R2_0"; "generic.average"; "generic.copy_with"; "generic.find_first"; "generic.group_by"; "generic.is_positive"; "generic.item_at"; "generic.one_of"; "generic.replaced"; "generic.same_text"; }
     "R2_1" [shape=plaintext, style="", fontsize=11, fontcolor="#888888", label="", width=0.2];
@@ -89,7 +89,7 @@ digraph callgraph {
   }
   subgraph cluster_7 {
     label="Данные"; labeljust=l; fontsize=15; fontname="Helvetica-Bold";
-    style=filled; fillcolor="#eef2f7"; color="#c8c8c8";
+    style=filled; fillcolor="#eef3f8"; color="#d5dfe9"; margin=18;
     "R1_0" [shape=plaintext, style="", fontsize=11, fontcolor="#888888", label="1", width=0.2];
     { rank=same; "R1_0"; "Cartoon: поля"; "Catalog: поля"; "Cinematography: поля"; "Comparison: поля"; "EmptyPlaylistException"; "Film: поля"; "FilmotekaError"; "IdenticalMoviesException"; "InvalidPropertyException"; }
     "R1_1" [shape=plaintext, style="", fontsize=11, fontcolor="#888888", label="", width=0.2];
@@ -97,7 +97,7 @@ digraph callgraph {
   }
   subgraph cluster_8 {
     label="Язык Python"; labeljust=l; fontsize=15; fontname="Helvetica-Bold";
-    style=filled; fillcolor="#f7f7f2"; color="#c8c8c8";
+    style=filled; fillcolor="#f8fafc"; color="#d5dfe9"; margin=18;
     "R0_0" [shape=plaintext, style="", fontsize=11, fontcolor="#888888", label="0", width=0.2];
     { rank=same; "R0_0"; "input()"; "print()"; "open()"; "file.read"; "file.write"; "datetime.now"; "traceback.format_exc"; "for"; "индекс [ ]"; }
     "R0_1" [shape=plaintext, style="", fontsize=11, fontcolor="#888888", label="", width=0.2];

@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="457" viewBox="0 0 900 457">
+<title>Граф вызовов: после изменений — обзор слоёв</title>
+<desc>Все слои и категории узлов. Серые стрелки показывают связи соседних слоёв, оранжевые — прямые зависимости верхних слоёв от данных и языка. Полный граф находится в отдельном SVG.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10" fill="#94a3b8"/></marker><marker id="warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10" fill="#d35400"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<g font-family="Helvetica,Arial,sans-serif" fill="#1d2329">
+<text x="18" y="20" font-size="12" fill="#5f6b76">СЛОЙ / НАЗНАЧЕНИЕ</text><text x="470" y="20" font-size="12" fill="#5f6b76">Д / В / ДАННЫЕ / ЯЗЫК</text>
+<text x="714" y="20" font-size="12" fill="#d35400">ПРЯМЫЕ ОБХОДЫ</text>
+<rect x="8" y="34" width="655" height="34" rx="5" fill="#f5f8fb"/>
+<text x="20" y="56" font-size="13" fill="#7a8691">01</text>
+<text x="50" y="56" font-size="14" font-weight="600">Приложение: цикл меню</text>
+<text x="500" y="56" font-size="14" text-anchor="middle" fill="#c0392b">1</text>
+<text x="543" y="56" font-size="14" text-anchor="middle" fill="#1e8449">·</text>
+<text x="586" y="56" font-size="14" text-anchor="middle" fill="#2463a8">·</text>
+<text x="629" y="56" font-size="14" text-anchor="middle" fill="#7a7a7a">·</text>
+<rect x="8" y="77" width="655" height="34" rx="5" fill="#edf2f7"/>
+<text x="20" y="99" font-size="13" fill="#7a8691">02</text>
+<text x="50" y="99" font-size="14" font-weight="600">Сценарии меню</text>
+<text x="500" y="99" font-size="14" text-anchor="middle" fill="#c0392b">20</text>
+<text x="543" y="99" font-size="14" text-anchor="middle" fill="#1e8449">·</text>
+<text x="586" y="99" font-size="14" text-anchor="middle" fill="#2463a8">·</text>
+<text x="629" y="99" font-size="14" text-anchor="middle" fill="#7a7a7a">·</text>
+<path d="M682 94V137" stroke="#94a3b8" fill="none" marker-end="url(#arrow)"/>
+<text x="691" y="120" font-size="10" fill="#64748b">41</text>
+<rect x="8" y="120" width="655" height="34" rx="5" fill="#f5f8fb"/>
+<text x="20" y="142" font-size="13" fill="#7a8691">03</text>
+<text x="50" y="142" font-size="14" font-weight="600">Операции · Catalog, dialogs, storage, history</text>
+<text x="500" y="142" font-size="14" text-anchor="middle" fill="#c0392b">19</text>
+<text x="543" y="142" font-size="14" text-anchor="middle" fill="#1e8449">32</text>
+<text x="586" y="142" font-size="14" text-anchor="middle" fill="#2463a8">·</text>
+<text x="629" y="142" font-size="14" text-anchor="middle" fill="#7a7a7a">·</text>
+<path d="M682 137V180" stroke="#94a3b8" fill="none" marker-end="url(#arrow)"/>
+<text x="691" y="163" font-size="10" fill="#64748b">57</text>
+<rect x="8" y="163" width="655" height="34" rx="5" fill="#edf2f7"/>
+<text x="20" y="185" font-size="13" fill="#7a8691">04</text>
+<text x="50" y="185" font-size="14" font-weight="600">Блоки · views, records, console, Playlist, queries</text>
+<text x="500" y="185" font-size="14" text-anchor="middle" fill="#c0392b">12</text>
+<text x="543" y="185" font-size="14" text-anchor="middle" fill="#1e8449">52</text>
+<text x="586" y="185" font-size="14" text-anchor="middle" fill="#2463a8">·</text>
+<text x="629" y="185" font-size="14" text-anchor="middle" fill="#7a7a7a">·</text>
+<path d="M682 180V223" stroke="#94a3b8" fill="none" marker-end="url(#arrow)"/>
+<text x="691" y="206" font-size="10" fill="#64748b">3</text>
+<rect x="8" y="206" width="655" height="34" rx="5" fill="#f5f8fb"/>
+<text x="20" y="228" font-size="13" fill="#7a8691">05</text>
+<text x="50" y="228" font-size="14" font-weight="600">Сущности · произведения и зрители</text>
+<text x="500" y="228" font-size="14" text-anchor="middle" fill="#c0392b">·</text>
+<text x="543" y="228" font-size="14" text-anchor="middle" fill="#1e8449">21</text>
+<text x="586" y="228" font-size="14" text-anchor="middle" fill="#2463a8">·</text>
+<text x="629" y="228" font-size="14" text-anchor="middle" fill="#7a7a7a">·</text>
+<path d="M682 223V266" stroke="#94a3b8" fill="none" marker-end="url(#arrow)"/>
+<text x="691" y="249" font-size="10" fill="#64748b">5</text>
+<rect x="8" y="249" width="655" height="34" rx="5" fill="#edf2f7"/>
+<text x="20" y="271" font-size="13" fill="#7a8691">06</text>
+<text x="50" y="271" font-size="14" font-weight="600">Правила предметной области</text>
+<text x="500" y="271" font-size="14" text-anchor="middle" fill="#c0392b">·</text>
+<text x="543" y="271" font-size="14" text-anchor="middle" fill="#1e8449">6</text>
+<text x="586" y="271" font-size="14" text-anchor="middle" fill="#2463a8">·</text>
+<text x="629" y="271" font-size="14" text-anchor="middle" fill="#7a7a7a">·</text>
+<path d="M682 266V309" stroke="#94a3b8" fill="none" marker-end="url(#arrow)"/>
+<text x="691" y="292" font-size="10" fill="#64748b">2</text>
+<rect x="8" y="292" width="655" height="34" rx="5" fill="#f5f8fb"/>
+<text x="20" y="314" font-size="13" fill="#7a8691">07</text>
+<text x="50" y="314" font-size="14" font-weight="600">Общие операции</text>
+<text x="500" y="314" font-size="14" text-anchor="middle" fill="#c0392b">·</text>
+<text x="543" y="314" font-size="14" text-anchor="middle" fill="#1e8449">12</text>
+<text x="586" y="314" font-size="14" text-anchor="middle" fill="#2463a8">·</text>
+<text x="629" y="314" font-size="14" text-anchor="middle" fill="#7a7a7a">·</text>
+<rect x="8" y="335" width="655" height="34" rx="5" fill="#edf2f7"/>
+<text x="20" y="357" font-size="13" fill="#7a8691">08</text>
+<text x="50" y="357" font-size="14" font-weight="600">Данные</text>
+<text x="500" y="357" font-size="14" text-anchor="middle" fill="#c0392b">·</text>
+<text x="543" y="357" font-size="14" text-anchor="middle" fill="#1e8449">·</text>
+<text x="586" y="357" font-size="14" text-anchor="middle" fill="#2463a8">18</text>
+<text x="629" y="357" font-size="14" text-anchor="middle" fill="#7a7a7a">·</text>
+<rect x="8" y="378" width="655" height="34" rx="5" fill="#f5f8fb"/>
+<text x="20" y="400" font-size="13" fill="#7a8691">09</text>
+<text x="50" y="400" font-size="14" font-weight="600">Язык Python</text>
+<text x="500" y="400" font-size="14" text-anchor="middle" fill="#c0392b">·</text>
+<text x="543" y="400" font-size="14" text-anchor="middle" fill="#1e8449">·</text>
+<text x="586" y="400" font-size="14" text-anchor="middle" fill="#2463a8">·</text>
+<text x="629" y="400" font-size="14" text-anchor="middle" fill="#7a7a7a">36</text>
+<path d="M665 51H761V395H665" fill="none" stroke="#d35400" stroke-width="1.6" marker-end="url(#warn)"/>
+<rect x="749" y="213.0" width="24" height="19" rx="4" fill="white"/>
+<text x="761" y="227.0" font-size="12" text-anchor="middle" fill="#d35400">1</text>
+<text x="18" y="447" font-size="12" fill="#5f6b76">Числа на стрелках — связи; внутри строк — узлы. Остальные связи — в полном графе.</text>
+</g></svg>
